@@ -40,9 +40,11 @@ export function useHandTracking({ onFrame, drawOverlay = true }: Options = {}) {
 
   // Keep the latest callback without restarting the pipeline.
   const onFrameRef = useRef(onFrame)
-  onFrameRef.current = onFrame
   const drawRef = useRef(drawOverlay)
-  drawRef.current = drawOverlay
+  useEffect(() => {
+    onFrameRef.current = onFrame
+    drawRef.current = drawOverlay
+  })
 
   useEffect(() => {
     let cancelled = false

@@ -34,7 +34,9 @@ export default function DataStudio() {
   const bufferRef = useRef<number[][]>([])
   const lastCaptureRef = useRef(0)
   const selectedRef = useRef(selected)
-  selectedRef.current = selected
+  useEffect(() => {
+    selectedRef.current = selected
+  }, [selected])
 
   const startRecording = () => {
     setMessage(null)

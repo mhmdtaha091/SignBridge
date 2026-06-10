@@ -30,16 +30,18 @@ export default function Practice() {
     return LETTERS.map((l) => l.letter).filter((l) => (counts.get(l) ?? 0) >= 5)
   }, [samples])
 
-  useEffect(() => {
-    if (pool.length >= 2 && (target === null || !pool.includes(target))) {
-      setTarget(nextLetter(pool, null))
-    }
-  }, [pool, target])
+  // Render-phase state adjustment (the React-sanctioned pattern): keep the
+  // target inside the pool of letters the classifier knows.
+  if (pool.length >= 2 && (target === null || !pool.includes(target))) {
+    setTarget(nextLetter(pool, null))
+  }
 
   const gateRef = useRef(new StabilityGate({ minFrames: 6 }))
   const targetRef = useRef(target)
-  targetRef.current = target
   const lockRef = useRef(false) // ignore frames while showing a verdict
+  useEffect(() => {
+    targetRef.current = target
+  }, [target])
 
   const advance = useCallback(
     (correct: boolean, saw: string) => {

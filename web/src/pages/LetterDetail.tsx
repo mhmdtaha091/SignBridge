@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import HandDiagram from '../components/HandDiagram'
 import { letterInfo, lifeprintUrl } from '../config/vocab'
+import { referenceByLetter } from '../store/reference'
 import { sampleCounts, useSignStore } from '../store/useSignStore'
-import { referenceByLetter } from './Learn'
 
 export default function LetterDetail() {
   const { letter: param } = useParams()
@@ -15,7 +15,7 @@ export default function LetterDetail() {
     void init()
   }, [init])
 
-  const ref = useMemo(() => referenceByLetter(samples).get(letter), [samples, letter])
+  const ref = referenceByLetter(samples).get(letter)
   const count = sampleCounts(samples).get(letter) ?? 0
 
   if (!info) {
