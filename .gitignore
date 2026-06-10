@@ -1,0 +1,23 @@
+# dependencies / builds
+node_modules/
+dist/
+*.local
+
+# datasets are never committed (see docs/DATASET.md)
+data/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+
+# editor / os
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*

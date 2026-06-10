@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-rounded, system-ui, -apple-system, sans-serif;
+
+  /* Warm, friendly SignBridge palette */
+  --color-cream-50: #fffbf5;
+  --color-cream-100: #fff4e6;
+  --color-cream-200: #fbe8d3;
+  --color-cream-300: #f3d9bd;
+
+  --color-ink-900: #33241f;
+  --color-ink-700: #5c463e;
+  --color-ink-500: #8a7065;
+  --color-ink-300: #c4b2a9;
+
+  --color-coral-50: #fff1ed;
+  --color-coral-100: #ffe3da;
+  --color-coral-200: #ffc5b5;
+  --color-coral-500: #ff6b4a;
+  --color-coral-600: #f0512a;
+  --color-coral-700: #d63e1e;
+
+  --color-sun-100: #ffefd1;
+  --color-sun-400: #ffc352;
+  --color-sun-500: #ffb02e;
+  --color-sun-600: #e89a14;
+
+  --color-leaf-100: #dcf5e7;
+  --color-leaf-500: #3cb878;
+  --color-leaf-600: #2e9e63;
+  --color-leaf-700: #1f7d4c;
+
+  --color-sky-100: #d9f2f4;
+  --color-sky-500: #2ab5c3;
+  --color-sky-600: #1d9ba8;
+  --color-sky-700: #157c87;
+
+  --shadow-soft: 0 4px 14px 0 rgb(51 36 31 / 0.08);
+  --shadow-lift: 0 8px 28px 0 rgb(51 36 31 / 0.14);
+}
+
+@layer base {
+  body {
+    @apply bg-cream-50 text-ink-900 font-sans antialiased;
+  }
+
+  /* Friendly but visible keyboard focus everywhere */
+  :focus-visible {
+    @apply outline-3 outline-offset-2 outline-coral-500 rounded-md;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
