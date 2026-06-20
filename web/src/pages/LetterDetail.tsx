@@ -3,19 +3,21 @@ import { Link, useParams } from 'react-router-dom'
 import HandDiagram from '../components/HandDiagram'
 import { letterInfo, lifeprintUrl } from '../config/vocab'
 import { referenceByLetter } from '../store/reference'
-import { sampleCounts, useSignStore } from '../store/useSignStore'
+import { effectiveSamples, sampleCounts, useSignStore } from '../store/useSignStore'
 
 export default function LetterDetail() {
   const { letter: param } = useParams()
   const letter = (param ?? '').toUpperCase()
   const info = letterInfo(letter)
-  const { samples, init } = useSignStore()
+  const { samples, init, usingStarter, starterSamples } = useSignStore()
 
   useEffect(() => {
     void init()
   }, [init])
 
-  const ref = referenceByLetter(samples).get(letter)
+  const ref = referenceByLetter(effectiveSamples({ samples, usingStarter, starterSamples })).get(
+    letter,
+  )
   const count = sampleCounts(samples).get(letter) ?? 0
 
   if (!info) {

@@ -11,11 +11,15 @@ Each milestone is independently demo-able. New ideas go to the backlog, not the 
 - Practice quiz with streaks and per-letter mastery
 - Data Studio: record/export/import samples (IndexedDB, landmark-only)
 
-## M2 — Shared starter model
+## ✅ M2 — Shared starter model (shipped)
 
-- Community landmark dataset (donated via Data Studio JSON export, CC0)
-- `ml/` Python pipeline: aggregate donations + public datasets → train → ship a default TF.js model so the app works **before** recording your own samples
-- Per-user fine-tuning stays on-device
+- `ml/` Python pipeline: public ASL alphabet images → MediaPipe landmarks (same
+  `hand_landmarker.task` as the browser) → trained MLP, exported as plain weights
+- App ships a **default fingerspelling model** (`web/public/models/asl-default/`)
+  and falls back to it whenever the user has no data — recognition works out of
+  the box; per-user recordings on-device take over the moment they're added
+- Next: a community landmark dataset (donated via Data Studio JSON export, CC0)
+  to broaden the starter model across more hands
 
 ## M3 — Word signs (dynamic)
 

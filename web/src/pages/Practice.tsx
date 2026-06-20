@@ -4,7 +4,13 @@ import NeedsDataNotice from '../components/NeedsDataNotice'
 import { LETTERS, letterInfo } from '../config/vocab'
 import { StabilityGate } from '../recognition/stability'
 import { useProgressStore } from '../store/useProgressStore'
-import { activeClassifier, sampleCounts, useSignStore } from '../store/useSignStore'
+import {
+  activeClassifier,
+  effectiveSamples,
+  sampleCounts,
+  useSignStore,
+} from '../store/useSignStore'
+import StarterNotice from '../components/StarterNotice'
 import type { TrackedFrame } from '../vision/useHandTracking'
 
 type Verdict = { kind: 'correct' } | { kind: 'wrong'; saw: string } | null
@@ -15,7 +21,7 @@ function nextLetter(pool: string[], current: string | null): string {
 }
 
 export default function Practice() {
-  const { samples, init, loaded } = useSignStore()
+  const { samples, init, loaded, usingStarter, starterSamples, starterAccuracy } = useSignStore()
   const { streak, bestStreak, mastery, recordAttempt } = useProgressStore()
   const [target, setTarget] = useState<string | null>(null)
   const [verdict, setVerdict] = useState<Verdict>(null)
@@ -24,11 +30,11 @@ export default function Practice() {
     void init()
   }, [init])
 
-  // Only quiz letters the classifier actually knows.
+  // Only quiz letters the classifier actually knows (own data, else starter).
   const pool = useMemo(() => {
-    const counts = sampleCounts(samples)
+    const counts = sampleCounts(effectiveSamples({ samples, usingStarter, starterSamples }))
     return LETTERS.map((l) => l.letter).filter((l) => (counts.get(l) ?? 0) >= 5)
-  }, [samples])
+  }, [samples, usingStarter, starterSamples])
 
   // Render-phase state adjustment (the React-sanctioned pattern): keep the
   // target inside the pool of letters the classifier knows.
@@ -100,6 +106,8 @@ export default function Practice() {
           </div>
         </div>
       </div>
+
+      {usingStarter && <StarterNotice accuracy={starterAccuracy} className="mt-6" />}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(260px,0.55fr)_1fr]">
         <div

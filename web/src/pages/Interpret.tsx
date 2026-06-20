@@ -4,10 +4,12 @@ import NeedsDataNotice from '../components/NeedsDataNotice'
 import { StabilityGate } from '../recognition/stability'
 import { isSpeechSupported, speak, stopSpeaking } from '../speech/tts'
 import { activeClassifier, useSignStore } from '../store/useSignStore'
+import StarterNotice from '../components/StarterNotice'
 import type { TrackedFrame } from '../vision/useHandTracking'
 
 export default function Interpret() {
-  const { samples, init, loaded } = useSignStore()
+  const { samples, init, loaded, usingStarter, starterAccuracy } = useSignStore()
+  const hasData = samples.length > 0 || usingStarter
   const [text, setText] = useState('')
   const [live, setLive] = useState<{ label: string; confidence: number; progress: number } | null>(
     null,
@@ -37,7 +39,7 @@ export default function Interpret() {
 
   const words = text.trim()
 
-  if (loaded && samples.length === 0) {
+  if (loaded && !hasData) {
     return (
       <section className="mx-auto max-w-3xl px-4 py-12">
         <h1 className="text-4xl font-black mb-8">Interpret</h1>
@@ -54,6 +56,7 @@ export default function Interpret() {
         fills, the letter is added. Then press <strong>Speak</strong> (or it’s one tap away on
         every word).
       </p>
+      {usingStarter && <StarterNotice accuracy={starterAccuracy} className="mt-5" />}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(300px,0.7fr)]">
         <CameraView onFrame={onFrame}>

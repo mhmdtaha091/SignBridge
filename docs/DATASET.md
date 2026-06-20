@@ -19,11 +19,26 @@ One sample = one hand pose = **63 numbers** (21 MediaPipe hand landmarks × x/y/
 
 Export your samples as JSON in the Data Studio and attach them to a GitHub issue/PR. By donating you agree to release them as **CC0**. Donations feed the M2 shared starter model so future users get recognition out of the box.
 
-## Public datasets (for the M2/M3 `ml/` pipeline)
+## The shipped starter model (M2)
+
+SignBridge now bundles a default fingerspelling model so recognition works
+before you record anything. It's built by the [`ml/`](../ml/README.md) pipeline:
+
+1. `extract_landmarks.py` pulls a public, no-auth ASL alphabet image set
+   ([Marxulia/asl_sign_languages_alphabets_v03](https://huggingface.co/datasets/Marxulia/asl_sign_languages_alphabets_v03))
+   and runs the **same** MediaPipe `hand_landmarker.task` the browser uses,
+   normalizing exactly like `web/src/vision/normalize.ts` (images are letterboxed
+   to 16:9 first, matching the live camera). `J`/`Z` are excluded (motion signs).
+2. `train.py` trains an MLP matching `web/src/recognition/mlp.ts` and exports
+   `web/public/models/asl-default/model.json` + a small seed in
+   `web/public/seed/`. The app loads these in `web/src/recognition/starter.ts`
+   and falls back to your own recorded data the moment you add any.
+
+## Other public datasets (for future milestones)
 
 | Dataset | Type | Use |
 |---|---|---|
-| Google ASL Fingerspelling (Kaggle) | landmark sequences | fingerspelling pretraining |
-| WLASL / MS-ASL | video | word-sign vocabulary (extract landmarks with MediaPipe) |
+| Google ASL Fingerspelling (Kaggle) | landmark sequences | more fingerspelling data |
+| WLASL / MS-ASL | video | word-sign vocabulary, M3 (extract landmarks with MediaPipe) |
 
 Raw datasets live in `data/` which is **gitignored** — never commit raw data; commit scripts and exported models only.

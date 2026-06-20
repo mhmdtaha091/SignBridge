@@ -3,16 +3,19 @@ import { Link } from 'react-router-dom'
 import HandDiagram from '../components/HandDiagram'
 import { LETTERS } from '../config/vocab'
 import { referenceByLetter } from '../store/reference'
-import { useSignStore } from '../store/useSignStore'
+import { effectiveSamples, useSignStore } from '../store/useSignStore'
 
 export default function Learn() {
-  const { samples, init } = useSignStore()
+  const { samples, init, usingStarter, starterSamples } = useSignStore()
 
   useEffect(() => {
     void init()
   }, [init])
 
-  const refs = useMemo(() => referenceByLetter(samples), [samples])
+  const refs = useMemo(
+    () => referenceByLetter(effectiveSamples({ samples, usingStarter, starterSamples })),
+    [samples, usingStarter, starterSamples],
+  )
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
