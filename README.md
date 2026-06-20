@@ -3,16 +3,18 @@
 > **Learn sign language. Be understood.**
 > A free, open-source web app that teaches ASL fingerspelling with live camera feedback — and interprets your signing into spoken words. All computer vision runs **in your browser**; your camera never leaves your device.
 
-**Status: v0 — fingerspelling alphabet (A–Z), live and working.** See the [roadmap](docs/ROADMAP.md) for what's next (word signs, 3D avatar tutor).
+**▶️ Live demo: [signbridge-kappa.vercel.app](https://signbridge-kappa.vercel.app)** — works out of the box; no install, no sign-up.
+
+**Status: v0 — fingerspelling alphabet (A–Z), live and working.** Ships with a built-in recognition model trained on a public dataset, so it recognizes signs immediately — recording your own samples just fine-tunes it to your hands. See the [roadmap](docs/ROADMAP.md) for what's next (word signs, 3D avatar tutor).
 
 ## What it does
 
 | Mode | What happens |
 |---|---|
-| **Learn** | A friendly A–Z gallery of ASL handshapes with tips. Once you record samples, *your own hands* become the diagrams. |
+| **Learn** | A friendly A–Z gallery of ASL handshapes with tips and reference hand diagrams. Record your own samples and *your own hands* replace the defaults. |
 | **Practice** | The app shows a letter, you sign it at the camera, and it tells you instantly if you got it right. Streaks, per-letter mastery. |
 | **Interpret** | Fingerspell in front of your camera → letters assemble into words → spoken aloud with the Web Speech API. |
-| **Data Studio** | Teach SignBridge your hands in ~10 minutes: record landmark samples per letter, check quality, and train a small neural net — all on-device. |
+| **Data Studio** | *Optional* — fine-tune to your own hands in ~10 minutes: record landmark samples per letter, check quality, and train a small neural net, all on-device. |
 
 ## How it works
 
