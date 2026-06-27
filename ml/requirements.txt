@@ -6,3 +6,6 @@ pyarrow==24.0.0
 pillow==12.2.0
 requests==2.34.2
 tqdm==4.68.3
+tensorflow>=2.16.0
+tensorflowjs>=4.22.0
+opencv-python>=4.10.0

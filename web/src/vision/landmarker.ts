@@ -15,7 +15,7 @@ export function getHandLandmarker(): Promise<HandLandmarker> {
       return HandLandmarker.createFromOptions(vision, {
         baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
         runningMode: 'VIDEO',
-        numHands: 1,
+        numHands: 2,
         minHandDetectionConfidence: 0.5,
         minHandPresenceConfidence: 0.5,
         minTrackingConfidence: 0.5,

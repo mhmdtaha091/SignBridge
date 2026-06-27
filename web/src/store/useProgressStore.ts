@@ -10,7 +10,9 @@ interface ProgressState {
   streak: number
   bestStreak: number
   mastery: Record<string, LetterStats>
+  wordMastery: Record<string, LetterStats>
   recordAttempt: (letter: string, correct: boolean) => void
+  recordWordAttempt: (word: string, correct: boolean) => void
   resetStreak: () => void
 }
 
@@ -21,6 +23,7 @@ export const useProgressStore = create<ProgressState>()(
       streak: 0,
       bestStreak: 0,
       mastery: {},
+      wordMastery: {},
       recordAttempt: (letter, correct) =>
         set((state) => {
           const prev = state.mastery[letter] ?? { attempts: 0, correct: 0 }
@@ -31,6 +34,22 @@ export const useProgressStore = create<ProgressState>()(
             mastery: {
               ...state.mastery,
               [letter]: {
+                attempts: prev.attempts + 1,
+                correct: prev.correct + (correct ? 1 : 0),
+              },
+            },
+          }
+        }),
+      recordWordAttempt: (word, correct) =>
+        set((state) => {
+          const prev = state.wordMastery[word] ?? { attempts: 0, correct: 0 }
+          const streak = correct ? state.streak + 1 : 0
+          return {
+            streak,
+            bestStreak: Math.max(state.bestStreak, streak),
+            wordMastery: {
+              ...state.wordMastery,
+              [word]: {
                 attempts: prev.attempts + 1,
                 correct: prev.correct + (correct ? 1 : 0),
               },

@@ -8,7 +8,11 @@ import Learn from './pages/Learn'
 import LetterDetail from './pages/LetterDetail'
 import Practice from './pages/Practice'
 import Interpret from './pages/Interpret'
+import WordLearn from './pages/WordLearn'
+import WordDetail from './pages/WordDetail'
+import WordPractice from './pages/WordPractice'
 import DataStudio from './pages/DataStudio'
+import TutorMode from './pages/TutorMode'
 import About from './pages/About'
 
 createRoot(document.getElementById('root')!).render(
@@ -20,8 +24,12 @@ createRoot(document.getElementById('root')!).render(
           <Route path="learn" element={<Learn />} />
           <Route path="learn/:letter" element={<LetterDetail />} />
           <Route path="practice" element={<Practice />} />
+          <Route path="words" element={<WordLearn />} />
+          <Route path="words/:word" element={<WordDetail />} />
+          <Route path="practice-words" element={<WordPractice />} />
           <Route path="interpret" element={<Interpret />} />
           <Route path="studio" element={<DataStudio />} />
+          <Route path="tutor" element={<TutorMode />} />
           <Route path="about" element={<About />} />
         </Route>
       </Routes>
