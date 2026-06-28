@@ -34,7 +34,7 @@ def main():
     parser.add_argument("--epochs", type=int, default=80)
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--window_size", type=int, default=60)
+    parser.add_argument("--window_size", type=int, default=30)
     parser.add_argument("--feature_size", type=int, default=159)
     parser.add_argument("--val_split", type=float, default=0.15)
     args = parser.parse_args()

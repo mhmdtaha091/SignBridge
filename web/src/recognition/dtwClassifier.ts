@@ -2,8 +2,8 @@ import { dtw } from './dtw'
 import { FULL_FEATURE_SIZE } from '../vision/types'
 import type { Prediction, SequenceClassifier, LabeledSequence } from './types'
 
-const WINDOW_SIZE = 60
-const MAX_REF_WINDOW = 80
+const WINDOW_SIZE = 30
+const MAX_REF_WINDOW = 45
 
 /**
  * DTW-based sequence classifier — a working MVP classifier before the GRU

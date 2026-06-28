@@ -130,12 +130,12 @@ def extract_frame_features(
 
 def segment_windows(
     features: list[np.ndarray],
-    window_size: int = 60,
-    stride: int = 15,
+    window_size: int = 30,
+    stride: int = 5,
 ) -> list[np.ndarray]:
     """Slide a fixed window over the feature sequence with stride."""
     windows: list[np.ndarray] = []
-    if len(features) < 15:  # too short
+    if len(features) < 10:  # too short
         return windows
     for start in range(0, len(features) - window_size + 1, stride):
         win = np.array(features[start : start + window_size], dtype=np.float32)
@@ -190,7 +190,7 @@ def main():
         base_options=mp_python.BaseOptions(model_asset_path=hand_model_path),
         running_mode=vision.RunningMode.IMAGE,
         num_hands=2,
-        min_hand_detection_confidence=0.5,
+        min_hand_detection_confidence=0.3,  # Lower for 320x240 WLASL videos
     )
     hand_landmarker = vision.HandLandmarker.create_from_options(hand_options)
 
@@ -229,6 +229,10 @@ def main():
                 continue
 
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # Upscale low-res frames to improve MediaPipe hand detection
+            h, w = rgb.shape[:2]
+            if w < 480:
+                rgb = cv2.resize(rgb, (w * 2, h * 2), interpolation=cv2.INTER_LANCZOS4)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
             hand_result = hand_landmarker.detect(mp_image)

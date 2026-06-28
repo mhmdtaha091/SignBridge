@@ -11,6 +11,44 @@ import os
 import subprocess
 import sys
 
+# Work around tensorflowjs ecosystem conflicts on Windows.
+# tensorflowjs 4.22 expects tf_keras (standalone package), but TF 2.16+
+# ships Keras 3 as tensorflow.keras. Alias it before tensorflowjs imports.
+import tensorflow.keras as _keras
+sys.modules["tf_keras"] = _keras
+sys.modules["tf_keras.layers"] = _keras.layers
+
+# tensorflowjs eagerly imports many optional backends (JAX, TF-DF, TF-Hub, etc.)
+# that aren't needed for Keras .h5 conversion. Provide stubs for any that are
+# missing so the converter can load without installing the entire ecosystem.
+class _FakeModule:
+    """Placeholder module that supports arbitrary submodule access and imports."""
+    __path__ = []  # Makes it look like a package (supports 'from X.Y import Z')
+
+    def __init__(self, _name: str = ""):
+        self.__name__ = _name
+        self.__all__ = []
+
+    def __getattr__(self, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        child = _FakeModule(f"{self.__name__}.{name}")
+        setattr(self, name, child)
+        # Also register in sys.modules so 'from parent.child import X' works
+        sys.modules[child.__name__] = child
+        return child
+
+_FAKE_ROOTS = [
+    "tensorflow_decision_forests",
+    "tensorflow_hub",
+    "jax",
+    "flax",
+    "tf2onnx",
+]
+for _mod in _FAKE_ROOTS:
+    if _mod not in sys.modules:
+        sys.modules[_mod] = _FakeModule(_mod)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -27,23 +65,16 @@ def main():
 
     os.makedirs(args.output, exist_ok=True)
 
-    # 1. Convert via tensorflowjs_converter.
+    # 1. Convert via tensorflowjs_converter (in-process to inherit monkey-patches).
     print("Converting to TF.js…")
-    result = subprocess.run(
-        [
-            sys.executable, "-m", "tensorflowjs.converters.converter",
-            "--input_format=keras",
-            "--output_format=tfjs_layers_model",
-            args.model,
-            args.output,
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"ERROR during conversion:\n{result.stderr}")
-        sys.exit(1)
-    print(result.stdout)
+    from tensorflowjs.converters import converter
+    converter.convert([
+        "--input_format=keras",
+        "--output_format=tfjs_layers_model",
+        args.model,
+        args.output,
+    ])
+    print("Conversion complete.")
 
     # 2. Copy labels if provided.
     if args.labels and os.path.exists(args.labels):
@@ -52,15 +83,15 @@ def main():
         shutil.copy(args.labels, dest)
         print(f"Copied labels to {dest}")
     else:
-        print("⚠ No labels file provided — vocab.json not created.")
+        print("[WARN] No labels file provided — vocab.json not created.")
 
     # 3. Verify.
     model_json = os.path.join(args.output, "model.json")
     if os.path.exists(model_json):
         size = os.path.getsize(model_json)
-        print(f"✅ TF.js model created: {model_json} ({size:,} bytes)")
+        print(f"[OK] TF.js model created: {model_json} ({size:,} bytes)")
     else:
-        print("❌ model.json not found — conversion may have failed.")
+        print("[ERROR] model.json not found — conversion may have failed.")
 
 
 if __name__ == "__main__":

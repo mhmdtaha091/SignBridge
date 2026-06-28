@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs'
 import { FULL_FEATURE_SIZE } from '../vision/types'
 import type { Prediction, SequenceClassifier } from './types'
 
-const WINDOW_SIZE = 60 // frames (≈ 2 seconds at 30 fps)
+const WINDOW_SIZE = 30 // frames (≈ 1 second at 30 fps)
 
 /**
  * GRU-based sequence classifier that loads a TF.js model from a URL or

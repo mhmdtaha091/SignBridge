@@ -23,7 +23,7 @@ DATA_DIR = os.path.join(HERE, "data", "temporal")
 
 
 def build_model(
-    window_size: int = 60,
+    window_size: int = 30,
     feature_size: int = 159,
     num_classes: int = 2,
 ) -> keras.Model:
