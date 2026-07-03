@@ -11,6 +11,10 @@ __pycache__/
 *.pyc
 .venv/
 
+# large model weights — distributed via GitHub Releases, not git
+*.h5
+*.keras
+
 # editor / os
 .vscode/*
 !.vscode/extensions.json
