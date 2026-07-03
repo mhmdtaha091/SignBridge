@@ -7,6 +7,8 @@
 
 **Status: bilingual ASL + PSL — fingerspelling + word signs, with a 3D avatar tutor.** Ships with built-in recognition models and seed data for both languages, so the app recognizes signs immediately. Recording your own samples fine-tunes it to your hands. See the [roadmap](docs/ROADMAP.md) for what's next.
 
+[![CI](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml)
+
 ## What it does
 
 | Mode | What happens |
