@@ -34,6 +34,35 @@ before you record anything. It's built by the [`ml/`](../ml/README.md) pipeline:
    `web/public/seed/`. The app loads these in `web/src/recognition/starter.ts`
    and falls back to your own recorded data the moment you add any.
 
+## PSL models (M3.5)
+
+SignBridge ships bilingual recognition. The PSL models are built from the
+[PakistanSignLanguageDatasetV2](https://www.kaggle.com/datasets/alihasan360/pakistan-sign-language-dataset-v2)
+on Kaggle (public, no-auth):
+
+1. `ml/extract_psl_landmarks.py` runs MediaPipe Hands on every video frame
+   producing 159-dim feature vectors (two hands + upper body) — PSL is a
+   two-handed language (BANZSL family), unlike one-handed ASL.
+2. `ml/train_psl_letters.py` trains an MLP on isolated PSL letter frames
+   (same architecture as the ASL letters MLP but with 159-dim input).
+3. `ml/train_psl_gru.py` trains a GRU on PSL word-sign video clips,
+   producing the TF.js export at `web/public/models/psl-gru-word-signs/`.
+
+### Measured accuracy (held-out validation)
+
+| Model | Accuracy | Vocab | Notes |
+|---|---|---|---|
+| PSL letters (MLP) | **99.0%** | 18 letters | Trained on Kaggle PSL dataset; A/B/C/D/F/G/H/K/L/M/N/P/Q/R/S/T/V/Y |
+| PSL words (GRU) | **86.7%** | 69 words | Community dataset, cross-signer eval pending (M5) |
+| ASL letters (MLP) | 94.7% | 24 letters | Shipped in M2 |
+| ASL words (GRU) | 96.2% | 25 words | Shipped in M3 |
+
+PSL letters achieve higher accuracy than ASL because PSL's two-handed system
+produces more distinctive landmark configurations per letter. PSL word-sign
+accuracy is lower — the dataset is community-sourced with fewer samples per
+sign and more inter-signer variation. Cross-signer evaluation (M5) will give
+an honest generalization number.
+
 ## Other public datasets (for future milestones)
 
 | Dataset | Type | Use |
