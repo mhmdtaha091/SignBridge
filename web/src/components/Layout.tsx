@@ -75,7 +75,7 @@ export default function Layout() {
           </p>
           <a
             className="font-bold text-coral-700 hover:underline shrink-0"
-            href="https://github.com/signbridge"
+            href="https://github.com/mhmdtaha091/SignBridge"
             target="_blank"
             rel="noreferrer"
           >

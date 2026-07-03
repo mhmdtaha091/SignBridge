@@ -5,6 +5,7 @@ import ModelStatusBanner from '../components/ModelStatusBanner'
 import NeedsDataNotice from '../components/NeedsDataNotice'
 import { useWordSigns, getWordInfo } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
+import Button from '../components/ui/Button'
 import { SignGate } from '../recognition/signGate'
 import { GruSequenceClassifier } from '../recognition/sequenceClassifier'
 import type { SequenceClassifier } from '../recognition/types'
@@ -196,13 +197,9 @@ export default function WordPractice() {
                 That looked like "{verdict.saw}" — try again
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => setTarget((cur) => nextWord(pool, cur))}
-              className="mt-6 px-5 py-2.5 rounded-full bg-cream-50 border-2 border-cream-300 font-bold text-ink-700 hover:bg-cream-200 transition-colors"
-            >
+            <Button variant="secondary" onClick={() => setTarget((cur) => nextWord(pool, cur))}>
               Skip →
-            </button>
+            </Button>
           </div>
 
           <FullCameraView

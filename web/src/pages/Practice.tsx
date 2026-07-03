@@ -3,6 +3,7 @@ import CameraView from '../components/CameraView'
 import NeedsDataNotice from '../components/NeedsDataNotice'
 import { useLetters } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
+import Button from '../components/ui/Button'
 import { StabilityGate } from '../recognition/stability'
 import { useProgressStore } from '../store/useProgressStore'
 import {
@@ -140,16 +141,12 @@ export default function Practice() {
           )}
           {verdict?.kind === 'wrong' && (
             <p className="mt-4 text-xl font-extrabold text-coral-700">
-              That looked like “{verdict.saw}” — try again
+              That looked like "{verdict.saw}" — try again
             </p>
           )}
-          <button
-            type="button"
-            onClick={() => setTarget((cur) => nextLetter(pool, cur))}
-            className="mt-6 px-5 py-2.5 rounded-full bg-cream-50 border-2 border-cream-300 font-bold text-ink-700 hover:bg-cream-200 transition-colors"
-          >
+          <Button variant="secondary" onClick={() => setTarget((cur) => nextLetter(pool, cur))}>
             Skip →
-          </button>
+          </Button>
         </div>
 
         <CameraView onFrame={onFrame} />

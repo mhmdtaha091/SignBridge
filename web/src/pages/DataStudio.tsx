@@ -3,6 +3,7 @@ import CameraView from '../components/CameraView'
 import FullCameraView from '../components/FullCameraView'
 import { useLetters } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
+import Button from '../components/ui/Button'
 import { leaveOneOutAccuracy } from '../recognition/knn'
 import { useSignStore, sampleCounts } from '../store/useSignStore'
 import { useFullTracking, type FullTrackingStatus } from '../vision/useFullTracking'
@@ -217,22 +218,20 @@ export default function DataStudio() {
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
+            <Button
               onClick={startRecording}
               disabled={phase !== 'idle'}
-              className="px-6 py-3 rounded-full bg-coral-500 hover:bg-coral-600 disabled:opacity-50 text-white font-extrabold shadow-soft transition-colors"
             >
-              {phase === 'idle' ? `Record ${SAMPLES_PER_RUN} samples of “${selected}”` : 'Recording…'}
-            </button>
+              {phase === 'idle' ? `Record ${SAMPLES_PER_RUN} samples of "${selected}"` : 'Recording…'}
+            </Button>
             {(counts.get(selected) ?? 0) > 0 && (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => deleteLabel(selected)}
-                className="px-4 py-2 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-bold text-ink-700 transition-colors"
               >
-                Delete “{selected}” samples ({counts.get(selected)})
-              </button>
+                Delete "{selected}" samples ({counts.get(selected)})
+              </Button>
             )}
           </div>
           {message && (
@@ -292,30 +291,30 @@ export default function DataStudio() {
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="info"
+                size="sm"
                 onClick={checkQuality}
                 disabled={samples.length < 10}
-                className="px-4 py-2 rounded-full bg-sky-100 hover:bg-sky-100/70 text-sky-700 font-bold disabled:opacity-50 transition-colors"
               >
                 Check quality
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={handleTrain}
                 disabled={samples.length < 30 || training !== null}
-                className="px-4 py-2 rounded-full bg-coral-100 hover:bg-coral-100/70 text-coral-700 font-bold disabled:opacity-50 transition-colors"
               >
                 {training ? `Training… ${training.epoch}/${training.total}` : 'Train neural net'}
-              </button>
+              </Button>
               {mlp && (
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setEngine(engine === 'mlp' ? 'knn' : 'mlp')}
-                  className="px-4 py-2 rounded-full bg-cream-50 border-2 border-cream-300 font-bold text-ink-700 transition-colors"
                 >
                   Switch to {engine === 'mlp' ? 'KNN' : 'neural net'}
-                </button>
+                </Button>
               )}
             </div>
             {looAcc !== null && (
@@ -335,15 +334,15 @@ export default function DataStudio() {
               browser. Export to back up, move devices, or contribute to the community dataset.
             </p>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={exportJson}
                 disabled={samples.length === 0}
-                className="px-4 py-2 rounded-full bg-cream-50 border-2 border-cream-300 font-bold text-ink-700 disabled:opacity-50 transition-colors"
               >
                 Export JSON
-              </button>
-              <label className="px-4 py-2 rounded-full bg-cream-50 border-2 border-cream-300 font-bold text-ink-700 cursor-pointer transition-colors">
+              </Button>
+              <label className="inline-flex items-center justify-center gap-2 font-extrabold rounded-full transition-colors px-4 py-2 bg-cream-50 border-2 border-cream-300 text-ink-700 cursor-pointer hover:bg-cream-200">
                 Import JSON
                 <input
                   type="file"
@@ -356,16 +355,16 @@ export default function DataStudio() {
                   }}
                 />
               </label>
-              <button
-                type="button"
+              <Button
+                variant="danger"
+                size="sm"
                 onClick={() => {
                   if (confirm('Delete ALL recorded samples and the trained model?')) void clearAll()
                 }}
                 disabled={samples.length === 0}
-                className="px-4 py-2 rounded-full bg-coral-50 text-coral-700 font-bold disabled:opacity-50 transition-colors"
               >
                 Clear everything
-              </button>
+              </Button>
             </div>
           </div>
 

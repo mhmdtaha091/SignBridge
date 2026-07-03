@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { LinkButton } from '../components/ui/Button'
 import { useWordSigns } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
 import { LANGUAGES } from '../config/language'
@@ -73,18 +74,12 @@ export default function WordLearn() {
       })}
 
       <div className="mt-12 flex gap-4 items-center flex-wrap">
-        <Link
-          to="/practice-words"
-          className="px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
-        >
+        <LinkButton to="/practice-words">
           Practice words →
-        </Link>
-        <Link
-          to="/interpret?mode=words"
-          className="px-6 py-3 rounded-full bg-cream-100 border-2 border-cream-300 text-ink-700 font-extrabold hover:bg-cream-200 transition-colors"
-        >
+        </LinkButton>
+        <LinkButton variant="secondary" to="/interpret?mode=words">
           Free-form interpret →
-        </Link>
+        </LinkButton>
         {modelAvailable === true && (
           <span className="px-3 py-1.5 rounded-full bg-leaf-100 text-leaf-700 text-xs font-bold">
             ✅ Model ready

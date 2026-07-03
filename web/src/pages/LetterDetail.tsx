@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import HandSnapshot3D from '../components/HandSnapshot3D'
+import { LinkButton } from '../components/ui/Button'
 import { getLetterInfo } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
 import { referenceByLetter } from '../store/reference'
@@ -25,7 +26,7 @@ export default function LetterDetail() {
   if (!info) {
     return (
       <section className="mx-auto max-w-3xl px-4 py-12">
-        <h1 className="text-4xl font-black">That’s not a letter we know</h1>
+        <h1 className="text-4xl font-black">That's not a letter we know</h1>
         <Link to="/learn" className="inline-block mt-4 font-extrabold text-coral-700 hover:underline">
           ← Back to the alphabet
         </Link>
@@ -60,7 +61,7 @@ export default function LetterDetail() {
         </div>
 
         <div>
-          <h1 className="text-3xl font-black">How to sign “{info.letter}”</h1>
+          <h1 className="text-3xl font-black">How to sign "{info.letter}"</h1>
           <p className="mt-3 text-lg text-ink-700">{info.tip}</p>
           {info.motion && (
             <p className="mt-3 rounded-2xl bg-sky-100 text-sky-700 font-bold p-4 text-sm">
@@ -69,30 +70,27 @@ export default function LetterDetail() {
             </p>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              to="/practice"
-              className="px-5 py-2.5 rounded-full bg-coral-500 hover:bg-coral-600 text-white font-extrabold shadow-soft transition-colors"
-            >
+            <LinkButton to="/practice">
               Practice it live
-            </Link>
+            </LinkButton>
             {language === 'asl' ? (
-              <a
+              <LinkButton
+                variant="secondary"
                 href={`https://www.lifeprint.com/asl101/fingerspelling/abc.htm#${info.letter.toLowerCase()}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-extrabold text-ink-700 transition-colors"
               >
                 See it signed (Lifeprint) ↗
-              </a>
+              </LinkButton>
             ) : (
-              <a
+              <LinkButton
+                variant="secondary"
                 href={`https://www.youtube.com/results?search_query=PSL+pakistan+sign+language+letter+${info.letter}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-5 py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-extrabold text-ink-700 transition-colors"
               >
                 Find PSL video reference ↗
-              </a>
+              </LinkButton>
             )}
           </div>
         </div>

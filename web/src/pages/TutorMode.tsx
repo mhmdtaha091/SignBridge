@@ -4,6 +4,7 @@ import AvatarView from '../components/AvatarView'
 import FullCameraView from '../components/FullCameraView'
 import ScoreRing from '../components/ScoreRing'
 import FeedbackBanner, { type FeedbackMessage } from '../components/FeedbackBanner'
+import Button from '../components/ui/Button'
 import { useWordSigns, getWordInfo } from '../config/vocabResolver'
 import { useLanguageStore } from '../store/useLanguageStore'
 import { dtw } from '../recognition/dtw'
@@ -175,13 +176,12 @@ export default function TutorMode() {
               )
             })}
           </div>
-          <button
-            type="button"
+          <Button
             onClick={handleNextSign}
-            className="mt-6 px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
+            className="mt-6"
           >
             Start New Lesson →
-          </button>
+          </Button>
         </div>
       )}
 
@@ -262,20 +262,12 @@ export default function TutorMode() {
             <div className="mt-4 flex gap-3 justify-center">
               {phase === 'watch' || phase === 'pick' ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={handleStartRecord}
-                    className="px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
-                  >
-                    🎥 My Turn
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextSign}
-                    className="px-6 py-3 rounded-full bg-cream-50 border-2 border-cream-300 text-ink-700 font-extrabold hover:bg-cream-200 transition-colors"
-                  >
-                    Skip →
-                  </button>
+                    <Button onClick={handleStartRecord}>
+                      🎥 My Turn
+                    </Button>
+                    <Button variant="secondary" onClick={handleNextSign}>
+                      Skip →
+                    </Button>
                 </>
               ) : phase === 'record' ? (
                 <p className="text-sm font-bold text-coral-600 animate-pulse">
@@ -283,20 +275,12 @@ export default function TutorMode() {
                 </p>
               ) : phase === 'score' ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={handleRetry}
-                    className="px-6 py-3 rounded-full bg-cream-50 border-2 border-cream-300 text-ink-700 font-extrabold hover:bg-cream-200 transition-colors"
-                  >
-                    🔄 Retry
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextSign}
-                    className="px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
-                  >
-                    Next sign →
-                  </button>
+                    <Button variant="secondary" onClick={handleRetry}>
+                      🔄 Retry
+                    </Button>
+                    <Button onClick={handleNextSign}>
+                      Next sign →
+                    </Button>
                 </>
               ) : null}
             </div>

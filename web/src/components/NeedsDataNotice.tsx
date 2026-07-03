@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { LinkButton } from './ui/Button'
 
 /** Friendly empty state shown when a live feature has no training data yet. */
 export default function NeedsDataNotice({ feature }: { feature: string }) {
@@ -11,14 +11,11 @@ export default function NeedsDataNotice({ feature }: { feature: string }) {
       <p className="mt-2 text-ink-700 max-w-md mx-auto">
         {feature} uses a tiny model trained on <em>your</em> hands, right in your browser. Record
         a few quick samples per letter in the Data Studio — about ten minutes for the whole
-        alphabet — and you’re set.
+        alphabet — and you're set.
       </p>
-      <Link
-        to="/studio"
-        className="inline-block mt-5 px-6 py-3 rounded-full bg-coral-500 hover:bg-coral-600 text-white font-extrabold shadow-soft transition-colors"
-      >
+      <LinkButton to="/studio" className="mt-5">
         Open the Data Studio
-      </Link>
+      </LinkButton>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { LinkButton } from '../components/ui/Button'
 
 const features = [
   {
@@ -42,18 +43,12 @@ export default function Landing() {
           device. ASL and PSL supported.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 justify-center">
-          <Link
-            to="/learn"
-            className="px-7 py-3.5 rounded-full bg-coral-500 hover:bg-coral-600 text-white font-extrabold text-lg shadow-lift transition-colors"
-          >
+          <LinkButton to="/learn" size="lg">
             Start learning
-          </Link>
-          <Link
-            to="/interpret"
-            className="px-7 py-3.5 rounded-full bg-cream-100 hover:bg-cream-200 text-ink-900 font-extrabold text-lg border-2 border-cream-300 transition-colors"
-          >
+          </LinkButton>
+          <LinkButton variant="secondary" to="/interpret" size="lg">
             Try the interpreter
-          </Link>
+          </LinkButton>
         </div>
       </section>
 

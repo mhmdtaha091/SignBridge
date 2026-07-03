@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { LinkButton } from '../components/ui/Button'
 import { getWordInfo } from '../config/vocabResolver'
 import { useSignStore } from '../store/useSignStore'
 
@@ -19,12 +20,9 @@ export default function WordDetail() {
         <p className="mt-4 text-ink-600">
           "{word}" is not in the vocabulary yet.
         </p>
-        <Link
-          to="/words"
-          className="mt-6 inline-block px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold"
-        >
+        <LinkButton to="/words" className="mt-6">
           ← Back to words
-        </Link>
+        </LinkButton>
       </section>
     )
   }
@@ -50,18 +48,12 @@ export default function WordDetail() {
       </div>
 
       <div className="mt-10 flex gap-4">
-        <Link
-          to={`/practice-words?target=${info.word}`}
-          className="px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
-        >
+        <LinkButton to={`/practice-words?target=${info.word}`}>
           Practice this sign →
-        </Link>
-        <Link
-          to={`/interpret?mode=words`}
-          className="px-6 py-3 rounded-full bg-cream-100 border-2 border-cream-300 text-ink-700 font-extrabold hover:bg-cream-200 transition-colors"
-        >
+        </LinkButton>
+        <LinkButton variant="secondary" to="/interpret?mode=words">
           Try in interpreter →
-        </Link>
+        </LinkButton>
       </div>
     </section>
   )

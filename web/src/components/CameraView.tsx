@@ -18,7 +18,7 @@ const statusCopy: Partial<Record<TrackingStatus, { title: string; body: string }
   },
   denied: {
     title: 'Camera access was blocked',
-    body: 'Click the camera icon in your browser’s address bar to allow access, then reload the page.',
+    body: "Click the camera icon in your browser's address bar to allow access, then reload the page.",
   },
   'no-camera': {
     title: 'No camera found',
