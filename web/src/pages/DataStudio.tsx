@@ -265,7 +265,7 @@ export default function DataStudio() {
                         : ready
                           ? 'bg-leaf-100 text-leaf-700 hover:bg-leaf-100/70'
                           : count > 0
-                            ? 'bg-sun-100 text-sun-600 hover:bg-sun-100/70'
+                            ? 'bg-sun-100 text-sun-700 hover:bg-sun-100/70'
                             : 'bg-cream-100 text-ink-500 hover:bg-cream-200'
                     }`}
                   >

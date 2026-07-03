@@ -24,7 +24,10 @@
   --color-sun-100: #ffefd1;
   --color-sun-400: #ffc352;
   --color-sun-500: #ffb02e;
-  --color-sun-600: #e89a14;
+  --color-sun-600: #e89a14;   /* text: only on dark bg */
+  --color-sun-700: #b87a0a;   /* text: AA large on cream */
+  --color-sun-800: #8a5c08;   /* text: AA normal on cream */
+  --color-sun-900: #5c3e06;   /* text: AAA on cream */
 
   --color-leaf-100: #dcf5e7;
   --color-leaf-500: #3cb878;

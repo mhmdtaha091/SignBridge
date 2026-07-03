@@ -169,7 +169,7 @@ export default function TutorMode() {
               return (
                 <div key={w} className="p-2 rounded-xl bg-white border border-leaf-100 text-center">
                   <p className="text-xs font-extrabold capitalize">{w}</p>
-                  <p className={`text-lg font-black ${best >= 70 ? 'text-leaf-600' : best > 0 ? 'text-sun-600' : 'text-slate-300'}`}>
+                  <p className={`text-lg font-black ${best >= 70 ? 'text-leaf-600' : best > 0 ? 'text-sun-700' : 'text-slate-300'}`}>
                     {best > 0 ? best : '-'}
                   </p>
                 </div>
@@ -248,7 +248,7 @@ export default function TutorMode() {
                 <div className="text-left">
                   <p className="text-sm text-ink-500">Your score</p>
                   <p className={`text-3xl font-black ${
-                    score >= 75 ? 'text-leaf-600' : score >= 50 ? 'text-sun-600' : 'text-coral-600'
+                    score >= 75 ? 'text-leaf-600' : score >= 50 ? 'text-sun-700' : 'text-coral-600'
                   }`}>
                     {score >= 75 ? 'Great!' : score >= 50 ? 'Good try' : 'Keep practicing'}
                   </p>
