@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import FullCameraView from '../components/FullCameraView'
+import ModelStatusBanner from '../components/ModelStatusBanner'
 import NeedsDataNotice from '../components/NeedsDataNotice'
-import { WORD_SIGNS, wordInfo } from '../config/vocab'
+import { useWordSigns, getWordInfo } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { SignGate } from '../recognition/signGate'
 import { GruSequenceClassifier } from '../recognition/sequenceClassifier'
 import type { SequenceClassifier } from '../recognition/types'
@@ -22,7 +24,9 @@ export default function WordPractice() {
   const [searchParams] = useSearchParams()
   const preselect = searchParams.get('target')
 
-  const { init, loaded } = useSignStore()
+  const words = useWordSigns()
+  const language = useLanguageStore((s) => s.language)
+  const { init } = useSignStore()
   const { streak, bestStreak, recordWordAttempt, wordMastery } = useProgressStore()
   const [target, setTarget] = useState<string | null>(preselect ?? null)
   const [verdict, setVerdict] = useState<Verdict>(null)
@@ -32,7 +36,7 @@ export default function WordPractice() {
     void init()
   }, [init])
 
-  const pool = useMemo(() => WORD_SIGNS.map((w) => w.word), [])
+  const pool = useMemo(() => words.map((w) => w.word), [words])
 
   if (pool.length >= 1 && (target === null || !pool.includes(target))) {
     setTarget(nextWord(pool, preselect))
@@ -42,32 +46,50 @@ export default function WordPractice() {
   const gateRef = useRef(new SignGate({ minFrames: 6, minConfidence: 0.4, cooldownMs: 1200 }))
   const targetRef = useRef(target)
   const lockRef = useRef(false)
-  const [modelReady, setModelReady] = useState(false)
-  const [modelLoadError, setModelLoadError] = useState(false)
+  const [modelStatus, setModelStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [modelVocabSize, setModelVocabSize] = useState<number | undefined>()
+  const [modelAccuracy, setModelAccuracy] = useState<number | undefined>()
+  const [modelError, setModelError] = useState<string | undefined>()
+  const [loadAttempt, setLoadAttempt] = useState(0)
 
-  // Attempt to load the GRU word-sign model. Falls back to "needs data" notice
-  // if the model hasn't been trained yet (file not found).
+  // Attempt to load the GRU word-sign model for the current language.
   useEffect(() => {
+    let cancelled = false
+    setModelStatus('loading')
+    setModelError(undefined)
+
     const BASE = import.meta.env.BASE_URL
-    fetch(`${BASE}models/gru-word-signs/vocab.json`)
+    const modelDir = language === 'psl' ? 'psl-gru-word-signs' : 'gru-word-signs'
+    fetch(`${BASE}models/${modelDir}/vocab.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then((vocab: { labels: string[]; val_accuracy?: number }) =>
-        GruSequenceClassifier.fromURL(
-          `${BASE}models/gru-word-signs/model.json`,
+      .then((vocab: { labels: string[]; val_accuracy?: number }) => {
+        if (cancelled) return
+        setModelVocabSize(vocab.labels.length)
+        if (vocab.val_accuracy != null) setModelAccuracy(vocab.val_accuracy)
+        return GruSequenceClassifier.fromURL(
+          `${BASE}models/${modelDir}/model.json`,
           vocab.labels,
-        ),
-      )
+        )
+      })
       .then((cls) => {
+        if (cancelled || !cls) return
         classifierRef.current = cls
-        setModelReady(true)
+        setModelStatus('ready')
       })
-      .catch(() => {
-        setModelLoadError(true)
+      .catch((err) => {
+        if (cancelled) return
+        setModelStatus('error')
+        setModelError(err instanceof Error ? err.message : 'Unknown error loading model')
       })
-  }, [])
+    return () => { cancelled = true }
+  }, [loadAttempt, language])
+
+  function handleRetry() {
+    setLoadAttempt((n) => n + 1)
+  }
 
   useEffect(() => {
     targetRef.current = target
@@ -110,10 +132,7 @@ export default function WordPractice() {
     setTrackingStatus(status)
   }, [status])
 
-  const info = target ? wordInfo(target) : undefined
-
-  // Show notice if GRU model isn't available (not trained/exported yet).
-  const showNotice = !modelReady && loaded && modelLoadError
+  const info = target ? getWordInfo(target) : undefined
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -134,13 +153,22 @@ export default function WordPractice() {
         </div>
       </div>
 
-      {showNotice && (
-        <NeedsDataNotice
-          feature="The word-sign model isn't available yet. Run the Colab training notebook (ml/colab/signbridge_m3_train.ipynb) to train the GRU model on WLASL, then copy the output to web/public/models/gru-word-signs/."
+      {modelStatus !== 'ready' && (
+        <ModelStatusBanner
+          status={modelStatus}
+          vocabSize={modelVocabSize}
+          accuracy={modelAccuracy}
+          errorMessage={modelError}
+          onRetry={handleRetry}
+          className="mt-6"
         />
       )}
 
-      {!showNotice && (
+      {modelStatus === 'error' ? (
+        <NeedsDataNotice
+          feature="The word-sign model couldn't be loaded. You can still use fingerspelling practice in the meantime."
+        />
+      ) : (
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(260px,0.55fr)_1fr]">
           <div
             className={`rounded-3xl p-8 text-center self-start transition-colors ${
@@ -190,7 +218,7 @@ export default function WordPractice() {
       <div className="mt-10">
         <h2 className="text-xl font-extrabold mb-3">Word mastery</h2>
         <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-1.5">
-          {WORD_SIGNS.map(({ word: w, emoji }) => {
+          {words.map(({ word: w, emoji }) => {
             const stats = wordMastery[w]
             const rate = stats && stats.attempts > 0 ? stats.correct / stats.attempts : null
             return (

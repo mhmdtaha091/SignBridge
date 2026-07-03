@@ -4,7 +4,7 @@ const features = [
   {
     emoji: '📖',
     title: 'Learn the alphabet',
-    body: 'A friendly A–Z gallery of ASL handshapes with tips for getting each one right.',
+    body: 'A friendly A–Z gallery of handshapes with tips for getting each one right. ASL and PSL.',
     to: '/learn',
     color: 'bg-sun-100',
   },
@@ -37,9 +37,9 @@ export default function Landing() {
           <span className="text-coral-500">Be understood.</span>
         </h1>
         <p className="mt-6 text-lg text-ink-700 max-w-2xl mx-auto text-balance">
-          SignBridge teaches you ASL with live feedback from your webcam — and turns your signing
+          SignBridge teaches you sign language with live feedback from your webcam — and turns your signing
           into spoken words. No account, no servers, no cost. Your camera feed never leaves your
-          device.
+          device. ASL and PSL supported.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 justify-center">
           <Link

@@ -133,40 +133,61 @@ import { SignGate } from '../recognition/signGate'
 import { useFullTracking } from '../vision/useFullTracking'
 import type { FullTrackedFrame } from '../vision/types'
 import FullCameraView from '../components/FullCameraView'
+import ModelStatusBanner from '../components/ModelStatusBanner'
+import { useLanguageStore } from '../store/useLanguageStore'
 
 function WordSignInterpret() {
-  const { init, loaded } = useSignStore()
+  const language = useLanguageStore((s) => s.language)
+  const { init } = useSignStore()
   const [text, setText] = useState('')
   const [live, setLive] = useState<{ label: string; confidence: number; progress: number } | null>(null)
   const [trackingStatus, setTrackingStatus] = useState<'loading-model' | 'requesting-camera' | 'running' | 'denied' | 'no-camera' | 'error'>('loading-model')
-  const [modelReady, setModelReady] = useState(false)
-  const [modelLoadError, setModelLoadError] = useState(false)
+  const [modelStatus, setModelStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [modelVocabSize, setModelVocabSize] = useState<number | undefined>()
+  const [modelAccuracy, setModelAccuracy] = useState<number | undefined>()
+  const [modelError, setModelError] = useState<string | undefined>()
+  const [loadAttempt, setLoadAttempt] = useState(0) // incremented to retry
 
   useEffect(() => { void init() }, [init])
 
-  // Attempt to load the GRU word-sign model. Falls back gracefully if the
-  // model hasn't been trained/exported yet (file not found).
+  // Attempt to load the GRU word-sign model for the current language.
   useEffect(() => {
+    let cancelled = false
+    setModelStatus('loading')
+    setModelError(undefined)
+
     const BASE = import.meta.env.BASE_URL
-    fetch(`${BASE}models/gru-word-signs/vocab.json`)
+    const modelDir = language === 'psl' ? 'psl-gru-word-signs' : 'gru-word-signs'
+    fetch(`${BASE}models/${modelDir}/vocab.json`)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
-      .then((vocab: { labels: string[]; val_accuracy?: number }) =>
-        GruSequenceClassifier.fromURL(
-          `${BASE}models/gru-word-signs/model.json`,
+      .then((vocab: { labels: string[]; val_accuracy?: number }) => {
+        if (cancelled) return
+        setModelVocabSize(vocab.labels.length)
+        if (vocab.val_accuracy != null) setModelAccuracy(vocab.val_accuracy)
+        return GruSequenceClassifier.fromURL(
+          `${BASE}models/${modelDir}/model.json`,
           vocab.labels,
-        ),
-      )
+        )
+      })
       .then((cls) => {
+        if (cancelled || !cls) return
         classifierRef.current = cls
-        setModelReady(true)
+        setModelStatus('ready')
       })
-      .catch(() => {
-        setModelLoadError(true)
+      .catch((err) => {
+        if (cancelled) return
+        setModelStatus('error')
+        setModelError(err instanceof Error ? err.message : 'Unknown error loading model')
       })
-  }, [])
+    return () => { cancelled = true }
+  }, [loadAttempt, language])
+
+  function handleRetry() {
+    setLoadAttempt((n) => n + 1)
+  }
 
   const classifierRef = useRef<SequenceClassifier>(GruSequenceClassifier.empty())
   const gateRef = useRef(new SignGate({ minFrames: 6, minConfidence: 0.4, cooldownMs: 1200 }))
@@ -192,7 +213,6 @@ function WordSignInterpret() {
   useEffect(() => { setTrackingStatus(status) }, [status])
 
   const words = text.trim()
-  const showNotice = !modelReady && loaded && modelLoadError
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -200,13 +220,20 @@ function WordSignInterpret() {
         Sign a word in front of the camera. Hold the sign for a beat — when recognized, it's
         added to the text. Press <strong>Speak</strong> to hear it aloud.
       </p>
-      {showNotice && (
+      {language === 'psl' && modelStatus === 'error' && (
         <div className="mt-5 p-4 rounded-2xl bg-sun-50 border border-sun-200 text-ink-700 text-sm">
-          ⚠️ The word-sign model isn't available yet. Run the Colab training notebook
-          (<code>ml/colab/signbridge_m3_train.ipynb</code>) to train the GRU model on WLASL,
-          then copy the output to <code>web/public/models/gru-word-signs/</code>.
+          ⚠️ PSL word-sign model not found. You can still use the ABC fingerspelling
+          mode for PSL — record your own samples in the Data Studio.
         </div>
       )}
+      <ModelStatusBanner
+        status={modelStatus}
+        vocabSize={modelVocabSize}
+        accuracy={modelAccuracy}
+        errorMessage={modelError}
+        onRetry={handleRetry}
+        className="mt-5"
+      />
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(300px,0.7fr)]">
         <FullCameraView videoRef={videoRef} canvasRef={canvasRef} status={trackingStatus} fps={fps}>

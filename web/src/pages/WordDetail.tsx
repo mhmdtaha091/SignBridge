@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { wordInfo } from '../config/vocab'
+import { getWordInfo } from '../config/vocabResolver'
 import { useSignStore } from '../store/useSignStore'
 
 export default function WordDetail() {
   const { word } = useParams<{ word: string }>()
-  const info = word ? wordInfo(word) : undefined
+  const info = word ? getWordInfo(word) : undefined
   const init = useSignStore((s) => s.init)
 
   useEffect(() => {

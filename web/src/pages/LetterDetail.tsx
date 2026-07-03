@@ -1,14 +1,16 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import HandDiagram from '../components/HandDiagram'
-import { letterInfo, lifeprintUrl } from '../config/vocab'
+import HandSnapshot3D from '../components/HandSnapshot3D'
+import { getLetterInfo } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { referenceByLetter } from '../store/reference'
 import { effectiveSamples, sampleCounts, useSignStore } from '../store/useSignStore'
 
 export default function LetterDetail() {
   const { letter: param } = useParams()
   const letter = (param ?? '').toUpperCase()
-  const info = letterInfo(letter)
+  const language = useLanguageStore((s) => s.language)
+  const info = getLetterInfo(letter)
   const { samples, init, usingStarter, starterSamples } = useSignStore()
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function LetterDetail() {
         <div className="rounded-3xl bg-cream-100 border border-cream-200 p-6 text-center">
           <p className="text-8xl font-black">{info.letter}</p>
           {ref ? (
-            <HandDiagram features={ref} className="mt-2 w-full aspect-square" />
+            <HandSnapshot3D features={ref} className="mt-2 w-full aspect-square" />
           ) : (
             <div className="mt-4 text-ink-500 text-sm">
               <p className="text-5xl mb-2" aria-hidden="true">✋</p>
@@ -73,14 +75,25 @@ export default function LetterDetail() {
             >
               Practice it live
             </Link>
-            <a
-              href={lifeprintUrl(info.letter)}
-              target="_blank"
-              rel="noreferrer"
-              className="px-5 py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-extrabold text-ink-700 transition-colors"
-            >
-              See it signed (Lifeprint) ↗
-            </a>
+            {language === 'asl' ? (
+              <a
+                href={`https://www.lifeprint.com/asl101/fingerspelling/abc.htm#${info.letter.toLowerCase()}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-extrabold text-ink-700 transition-colors"
+              >
+                See it signed (Lifeprint) ↗
+              </a>
+            ) : (
+              <a
+                href={`https://www.youtube.com/results?search_query=PSL+pakistan+sign+language+letter+${info.letter}`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-5 py-2.5 rounded-full bg-cream-100 hover:bg-cream-200 border-2 border-cream-300 font-extrabold text-ink-700 transition-colors"
+              >
+                Find PSL video reference ↗
+              </a>
+            )}
           </div>
         </div>
       </div>

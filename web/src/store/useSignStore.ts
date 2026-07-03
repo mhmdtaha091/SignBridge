@@ -2,8 +2,8 @@ import { create } from 'zustand'
 import { KnnClassifier } from '../recognition/knn'
 import type { MlpClassifier } from '../recognition/mlp'
 import type { LabeledSample } from '../recognition/types'
-import { FEATURE_SIZE } from '../vision/types'
-import { LETTER_SET } from '../config/vocab'
+import { getFeatureSize } from '../vision/types'
+import { useLanguageStore } from './useLanguageStore'
 import {
   addSampleRecords,
   clearAllSamples,
@@ -61,11 +61,13 @@ export const useSignStore = create<SignState>((set, get) => ({
 
   init: async () => {
     if (get().loaded) return
+    const language = useLanguageStore.getState().language
+    const mlpLabelsKey = `signbridge-mlp-labels-${language}`
     // TF.js is heavy — only pull it in if a trained model actually exists.
     const [samples, mlp] = await Promise.all([
       getAllSamples(),
-      localStorage.getItem('signbridge-mlp-labels')
-        ? import('../recognition/mlp').then((m) => m.loadSavedMlp())
+      localStorage.getItem(mlpLabelsKey)
+        ? import('../recognition/mlp').then((m) => m.loadSavedMlp(language))
         : Promise.resolve(null),
     ])
     if (samples.length > 0) {
@@ -83,7 +85,7 @@ export const useSignStore = create<SignState>((set, get) => ({
     // out of the box. If it can't load (offline build), the empty-state UI shows.
     try {
       const { loadStarter } = await import('../recognition/starter')
-      const starter = await loadStarter()
+      const starter = await loadStarter(language)
       set({
         loaded: true,
         samples: [],
@@ -116,9 +118,11 @@ export const useSignStore = create<SignState>((set, get) => ({
   },
 
   clearAll: async () => {
+    const language = useLanguageStore.getState().language
+    const mlpLabelsKey = `signbridge-mlp-labels-${language}`
     await clearAllSamples()
-    if (get().mlp || localStorage.getItem('signbridge-mlp-labels')) {
-      await (await import('../recognition/mlp')).deleteSavedMlp()
+    if (get().mlp || localStorage.getItem(mlpLabelsKey)) {
+      await (await import('../recognition/mlp')).deleteSavedMlp(language)
     }
     // With the user's own data gone, hand recognition back to the starter.
     const s = get()
@@ -135,12 +139,17 @@ export const useSignStore = create<SignState>((set, get) => ({
 
   importSamples: async (json) => {
     if (!Array.isArray(json)) throw new Error('Expected a JSON array of samples.')
+    const language = useLanguageStore.getState().language
+    const expectedSize = getFeatureSize(language)
+    // Build a letter set from the active language's vocabulary.
+    const { getLetters } = await import('../config/vocabResolver')
+    const letterSet = new Set(getLetters().map((l) => l.letter))
     const valid = json.filter(
       (s): s is LabeledSample =>
         typeof s?.label === 'string' &&
-        LETTER_SET.has(s.label) &&
+        letterSet.has(s.label) &&
         Array.isArray(s?.features) &&
-        s.features.length === FEATURE_SIZE &&
+        s.features.length === expectedSize &&
         s.features.every((v: unknown) => typeof v === 'number' && Number.isFinite(v)),
     )
     if (valid.length === 0) throw new Error('No valid samples found in that file.')
@@ -153,8 +162,9 @@ export const useSignStore = create<SignState>((set, get) => ({
 
   train: async (onProgress) => {
     const { samples } = get()
+    const language = useLanguageStore.getState().language
     const { trainMlp } = await import('../recognition/mlp')
-    const { classifier, valAccuracy } = await trainMlp(samples, onProgress)
+    const { classifier, valAccuracy } = await trainMlp(samples, language, onProgress)
     set({ mlp: classifier, mlpAccuracy: valAccuracy, engine: 'mlp' })
     localStorage.setItem(ENGINE_KEY, 'mlp')
     return valAccuracy

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import CameraView from '../components/CameraView'
 import NeedsDataNotice from '../components/NeedsDataNotice'
-import { LETTERS, letterInfo } from '../config/vocab'
+import { useLetters } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { StabilityGate } from '../recognition/stability'
 import { useProgressStore } from '../store/useProgressStore'
 import {
@@ -21,6 +22,8 @@ function nextLetter(pool: string[], current: string | null): string {
 }
 
 export default function Practice() {
+  const letters = useLetters()
+  const language = useLanguageStore((s) => s.language)
   const { samples, init, loaded, usingStarter, starterSamples, starterAccuracy } = useSignStore()
   const { streak, bestStreak, mastery, recordAttempt } = useProgressStore()
   const [target, setTarget] = useState<string | null>(null)
@@ -33,8 +36,8 @@ export default function Practice() {
   // Only quiz letters the classifier actually knows (own data, else starter).
   const pool = useMemo(() => {
     const counts = sampleCounts(effectiveSamples({ samples, usingStarter, starterSamples }))
-    return LETTERS.map((l) => l.letter).filter((l) => (counts.get(l) ?? 0) >= 5)
-  }, [samples, usingStarter, starterSamples])
+    return letters.map((l) => l.letter).filter((l) => (counts.get(l) ?? 0) >= 5)
+  }, [samples, usingStarter, starterSamples, letters])
 
   // Render-phase state adjustment (the React-sanctioned pattern): keep the
   // target inside the pool of letters the classifier knows.
@@ -88,7 +91,7 @@ export default function Practice() {
     )
   }
 
-  const info = target ? letterInfo(target) : undefined
+  const info = target ? letters.find((l) => l.letter === target) : undefined
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -108,6 +111,15 @@ export default function Practice() {
       </div>
 
       {usingStarter && <StarterNotice accuracy={starterAccuracy} className="mt-6" />}
+
+      {language === 'psl' && (
+        <div className="mt-5 p-4 rounded-2xl bg-sun-50 border border-sun-200 text-ink-700 text-sm">
+          ⚠️ PSL letter recognition is not yet available — the camera still uses the
+          ASL model. PSL uses a two-handed fingerspelling system (BANZSL) that differs
+          from ASL's one-handed alphabet. Switch to ASL for letter practice, or record
+          your own PSL samples in the Data Studio.
+        </div>
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(260px,0.55fr)_1fr]">
         <div
@@ -146,7 +158,7 @@ export default function Practice() {
       <div className="mt-10">
         <h2 className="text-xl font-extrabold mb-3">Letter mastery</h2>
         <div className="grid grid-cols-7 sm:grid-cols-13 gap-1.5">
-          {LETTERS.map(({ letter }) => {
+          {letters.map(({ letter }) => {
             const stats = mastery[letter]
             const rate = stats && stats.attempts > 0 ? stats.correct / stats.attempts : null
             return (

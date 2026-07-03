@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CameraView from '../components/CameraView'
-import { LETTERS } from '../config/vocab'
+import FullCameraView from '../components/FullCameraView'
+import { useLetters } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { leaveOneOutAccuracy } from '../recognition/knn'
 import { useSignStore, sampleCounts } from '../store/useSignStore'
+import { useFullTracking, type FullTrackingStatus } from '../vision/useFullTracking'
 import type { TrackedFrame } from '../vision/useHandTracking'
+import type { FullTrackedFrame } from '../vision/types'
 
 const SAMPLES_PER_RUN = 15
 const TARGET_PER_LETTER = 15
@@ -14,6 +18,9 @@ type RecordingPhase = 'idle' | 'countdown' | 'capturing'
 export default function DataStudio() {
   const { samples, loaded, init, addSamples, deleteLabel, clearAll, importSamples, train, engine, mlp, mlpAccuracy, setEngine } =
     useSignStore()
+  const language = useLanguageStore((s) => s.language)
+  const letters = useLetters()
+  const isPsl = language === 'psl'
   const [selected, setSelected] = useState('A')
   const [phase, setPhase] = useState<RecordingPhase>('idle')
   const [countdown, setCountdown] = useState(3)
@@ -21,13 +28,15 @@ export default function DataStudio() {
   const [looAcc, setLooAcc] = useState<number | null>(null)
   const [training, setTraining] = useState<{ epoch: number; total: number } | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  // PSL tracking — uses FullTracking for both-hand capture.
+  const [fullTrackingStatus, setFullTrackingStatus] = useState<FullTrackingStatus>('loading-model')
 
   useEffect(() => {
     void init()
   }, [init])
 
   const counts = sampleCounts(samples)
-  const totalLetters = LETTERS.filter((l) => (counts.get(l.letter) ?? 0) >= TARGET_PER_LETTER).length
+  const totalLetters = letters.filter((l) => (counts.get(l.letter) ?? 0) >= TARGET_PER_LETTER).length
 
   // Capture state lives in refs — onFrame fires from the vision loop, not React.
   const phaseRef = useRef<RecordingPhase>('idle')
@@ -79,6 +88,34 @@ export default function DataStudio() {
     [addSamples],
   )
 
+  // PSL full-tracking (both hands) — captures 159-dim features.
+  const onFullFrame = useCallback(
+    (tracked: FullTrackedFrame) => {
+      if (phaseRef.current !== 'capturing' || !tracked.features?.length) return
+      if (tracked.timestampMs - lastCaptureRef.current < CAPTURE_INTERVAL_MS) return
+      lastCaptureRef.current = tracked.timestampMs
+      bufferRef.current.push(tracked.features)
+      setCaptured(bufferRef.current.length)
+      if (bufferRef.current.length >= SAMPLES_PER_RUN) {
+        phaseRef.current = 'idle'
+        setPhase('idle')
+        const letter = selectedRef.current
+        void addSamples(letter, bufferRef.current).then(() => {
+          setMessage(`Saved ${SAMPLES_PER_RUN} samples for ${letter} ✓`)
+        })
+        bufferRef.current = []
+      }
+    },
+    [addSamples],
+  )
+
+  const { videoRef, canvasRef, status: ftStatus, fps } = useFullTracking({
+    onFrame: onFullFrame,
+    drawOverlay: true,
+    trackPose: true,
+  })
+  useEffect(() => { setFullTrackingStatus(ftStatus) }, [ftStatus])
+
   const checkQuality = () => {
     setLooAcc(leaveOneOutAccuracy(samples))
   }
@@ -127,30 +164,57 @@ export default function DataStudio() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_minmax(320px,0.8fr)]">
         <div>
-          <CameraView onFrame={onFrame}>
-            {phase === 'countdown' && (
-              <div className="absolute inset-0 grid place-items-center bg-ink-900/40">
-                <span className="text-8xl font-black text-white drop-shadow-lg" aria-live="assertive">
-                  {countdown}
-                </span>
-              </div>
-            )}
-            {phase === 'capturing' && (
-              <div className="absolute bottom-4 inset-x-4">
-                <div className="bg-ink-900/70 backdrop-blur rounded-2xl p-3 text-center">
-                  <p className="text-cream-50 font-extrabold">
-                    Recording “{selected}” — keep the handshape, vary the angle
-                  </p>
-                  <div className="mt-2 h-3 rounded-full bg-ink-900/60 overflow-hidden">
-                    <div
-                      className="h-full bg-leaf-500 transition-all"
-                      style={{ width: `${(captured / SAMPLES_PER_RUN) * 100}%` }}
-                    />
+          {isPsl ? (
+            <FullCameraView videoRef={videoRef} canvasRef={canvasRef} status={fullTrackingStatus} fps={fps}>
+              {phase === 'countdown' && (
+                <div className="absolute inset-0 grid place-items-center bg-ink-900/40">
+                  <span className="text-8xl font-black text-white drop-shadow-lg" aria-live="assertive">
+                    {countdown}
+                  </span>
+                </div>
+              )}
+              {phase === 'capturing' && (
+                <div className="absolute bottom-4 inset-x-4">
+                  <div className="bg-ink-900/70 backdrop-blur rounded-2xl p-3 text-center">
+                    <p className="text-cream-50 font-extrabold">
+                      Recording "{selected}" — show both hands, vary the angle
+                    </p>
+                    <div className="mt-2 h-3 rounded-full bg-ink-900/60 overflow-hidden">
+                      <div
+                        className="h-full bg-leaf-500 transition-all"
+                        style={{ width: `${(captured / SAMPLES_PER_RUN) * 100}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </CameraView>
+              )}
+            </FullCameraView>
+          ) : (
+            <CameraView onFrame={onFrame}>
+              {phase === 'countdown' && (
+                <div className="absolute inset-0 grid place-items-center bg-ink-900/40">
+                  <span className="text-8xl font-black text-white drop-shadow-lg" aria-live="assertive">
+                    {countdown}
+                  </span>
+                </div>
+              )}
+              {phase === 'capturing' && (
+                <div className="absolute bottom-4 inset-x-4">
+                  <div className="bg-ink-900/70 backdrop-blur rounded-2xl p-3 text-center">
+                    <p className="text-cream-50 font-extrabold">
+                      Recording "{selected}" — keep the handshape, vary the angle
+                    </p>
+                    <div className="mt-2 h-3 rounded-full bg-ink-900/60 overflow-hidden">
+                      <div
+                        className="h-full bg-leaf-500 transition-all"
+                        style={{ width: `${(captured / SAMPLES_PER_RUN) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CameraView>
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
@@ -183,11 +247,11 @@ export default function DataStudio() {
             <h2 className="font-extrabold text-lg mb-3">
               Choose a letter
               <span className="ml-2 text-sm font-bold text-ink-500">
-                {totalLetters}/26 ready
+                {totalLetters}/{letters.length} ready
               </span>
             </h2>
             <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5">
-              {LETTERS.map(({ letter }) => {
+              {letters.map(({ letter }) => {
                 const count = counts.get(letter) ?? 0
                 const ready = count >= TARGET_PER_LETTER
                 return (

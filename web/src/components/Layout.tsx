@@ -1,4 +1,6 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
+import { useLanguageStore } from '../store/useLanguageStore'
+import { LANGUAGES } from '../config/language'
 
 const navItems = [
   { to: '/learn', label: 'Letters' },
@@ -11,6 +13,9 @@ const navItems = [
 ]
 
 export default function Layout() {
+  const language = useLanguageStore((s) => s.language)
+  const setLanguage = useLanguageStore((s) => s.setLanguage)
+
   return (
     <div className="min-h-svh flex flex-col">
       <a
@@ -30,7 +35,7 @@ export default function Layout() {
             </span>
             SignBridge
           </Link>
-          <nav aria-label="Main" className="ml-auto flex items-center gap-1 flex-wrap">
+          <nav aria-label="Main" className="flex items-center gap-1 flex-wrap">
             {navItems.map(({ to, label }) => (
               <NavLink
                 key={to}
@@ -47,6 +52,14 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
+          <button
+            type="button"
+            onClick={() => setLanguage(language === 'asl' ? 'psl' : 'asl')}
+            className="ml-auto px-2.5 py-1.5 rounded-full text-xs font-bold bg-cream-100 hover:bg-cream-200 border border-cream-200 transition-colors shrink-0"
+            title={`Switch to ${language === 'asl' ? 'Pakistani Sign Language' : 'American Sign Language'}`}
+          >
+            {LANGUAGES[language].flag} {LANGUAGES[language].nativeName}
+          </button>
         </div>
       </header>
 

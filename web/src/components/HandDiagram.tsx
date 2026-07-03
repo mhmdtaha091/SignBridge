@@ -16,6 +16,12 @@ interface Props {
 /**
  * Renders a recorded handshape as a friendly SVG skeleton — your own recorded
  * samples become the reference diagrams in the Learn gallery.
+ *
+ * NOTE: For learner-facing views (Learn gallery, Letter detail), prefer
+ * HandSnapshot3D — it renders a 3D hand with depth cues that are much
+ * easier to understand than a flat 2D skeleton. This component remains
+ * useful for Data Studio previews and other contexts where a fast
+ * lightweight SVG is preferable to a full WebGL canvas.
  */
 export default function HandDiagram({ features, className }: Props) {
   const xs: number[] = []

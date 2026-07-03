@@ -1,15 +1,17 @@
 import * as tf from '@tensorflow/tfjs'
-import { FEATURE_SIZE } from '../vision/types'
+import { getFeatureSize } from '../vision/types'
+import type { SignLanguage } from '../config/language'
 import { KnnClassifier } from './knn'
 import { MlpClassifier } from './mlp'
 import type { SampleRecord } from '../store/samplesDb'
 
 /**
  * The bundled "starter" model so recognition works before a user records
- * anything. Trained offline by ml/train.py on a public ASL alphabet dataset
- * (see docs/DATASET.md) and shipped as plain weight arrays we rebuild into the
- * exact same tf.js graph as the in-browser MLP (mlp.ts). No tfjs converter
- * needed; no server round-trip beyond two static fetches.
+ * anything. Trained offline by ml/train.py (ASL) / ml/train_psl_letters.py
+ * (PSL) on public sign-language alphabet datasets and shipped as plain weight
+ * arrays we rebuild into the exact same tf.js graph as the in-browser MLP
+ * (mlp.ts). No tfjs converter needed; no server round-trip beyond two static
+ * fetches.
  */
 
 interface WeightsModel {
@@ -31,12 +33,10 @@ export interface Starter {
 }
 
 function buildModel(m: WeightsModel): tf.LayersModel {
-  if (m.featureSize !== FEATURE_SIZE) {
-    throw new Error(`starter featureSize ${m.featureSize} != ${FEATURE_SIZE}`)
-  }
+  const dim = m.featureSize
   const model = tf.sequential({
     layers: [
-      tf.layers.dense({ inputShape: [FEATURE_SIZE], units: 128, activation: 'relu' }),
+      tf.layers.dense({ inputShape: [dim], units: 128, activation: 'relu' }),
       tf.layers.dropout({ rate: 0.3 }),
       tf.layers.dense({ units: 64, activation: 'relu' }),
       tf.layers.dense({ units: m.labels.length, activation: 'softmax' }),
@@ -55,33 +55,47 @@ function buildModel(m: WeightsModel): tf.LayersModel {
   return model
 }
 
-let cached: Promise<Starter> | null = null
+const cache = new Map<SignLanguage, Promise<Starter>>()
 
-/** Fetch + build the starter model and seed. Cached; throws if unavailable. */
-export function loadStarter(): Promise<Starter> {
+/** Fetch + build the starter model and seed for the given language. Cached per language. */
+export function loadStarter(language: SignLanguage = 'asl'): Promise<Starter> {
+  const cached = cache.get(language)
   if (cached) return cached
-  cached = (async () => {
+
+  const promise = (async () => {
     const base = import.meta.env.BASE_URL
+    const langPrefix = language === 'psl' ? 'psl' : 'asl'
+    const expectedSize = getFeatureSize(language)
+
     const [modelRes, seedRes] = await Promise.all([
-      fetch(`${base}models/asl-default/model.json`),
-      fetch(`${base}seed/asl-fingerspelling.json`),
+      fetch(`${base}models/${langPrefix}-default/model.json`),
+      fetch(`${base}seed/${langPrefix}-fingerspelling.json`),
     ])
-    if (!modelRes.ok) throw new Error('starter model not found')
+    if (!modelRes.ok) throw new Error(`starter model not found for ${language}`)
     const m = (await modelRes.json()) as WeightsModel
+
+    if (m.featureSize !== expectedSize) {
+      throw new Error(
+        `starter model featureSize ${m.featureSize} != expected ${expectedSize} for ${language}`,
+      )
+    }
+
     const model = buildModel(m)
     const rawSeed = seedRes.ok ? ((await seedRes.json()) as { label: string; features: number[] }[]) : []
     const now = Date.now()
     const samples: SampleRecord[] = rawSeed.map((s) => ({ ...s, createdAt: now }))
     return {
-      mlp: new MlpClassifier(model, m.labels),
+      mlp: new MlpClassifier(model, m.labels, m.featureSize),
       knn: new KnnClassifier(samples),
       labels: m.labels,
       valAccuracy: m.valAccuracy,
       samples,
     }
   })()
-  cached.catch(() => {
-    cached = null // allow a retry if the fetch failed
+
+  promise.catch(() => {
+    cache.delete(language) // allow a retry if the fetch failed
   })
-  return cached
+  cache.set(language, promise)
+  return promise
 }

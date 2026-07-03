@@ -4,11 +4,13 @@ import AvatarView from '../components/AvatarView'
 import FullCameraView from '../components/FullCameraView'
 import ScoreRing from '../components/ScoreRing'
 import FeedbackBanner, { type FeedbackMessage } from '../components/FeedbackBanner'
-import { WORD_SIGNS, wordInfo } from '../config/vocab'
+import { useWordSigns, getWordInfo } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
 import { dtw } from '../recognition/dtw'
 import { generateFeedback } from '../recognition/feedback'
 import { useLessonStore } from '../store/useLessonStore'
 import { useSignStore } from '../store/useSignStore'
+import { loadReferenceTrajectory } from '../tutor/referenceLoader'
 import { useFullTracking } from '../vision/useFullTracking'
 import type { FullTrackedFrame } from '../vision/types'
 
@@ -17,6 +19,8 @@ type Phase = 'pick' | 'watch' | 'record' | 'score'
 const DEFAULT_LESSON = ['hello', 'thank you', 'yes', 'no', 'love']
 
 export default function TutorMode() {
+  const words = useWordSigns()
+  const language = useLanguageStore((s) => s.language)
   const init = useSignStore((s) => s.init)
   const { currentLesson, currentIndex, startLesson, recordScore, advance, resetLesson, isComplete, bestScores } = useLessonStore()
   const [phase, setPhase] = useState<Phase>('pick')
@@ -28,6 +32,18 @@ export default function TutorMode() {
   const recordStartRef = useRef(0)
   const recordingRef = useRef(false)
 
+  // Reference trajectory for the current word (loaded from public/references/).
+  const [refFrames, setRefFrames] = useState<number[][] | null>(null)
+  const [refLoading, setRefLoading] = useState(false)
+  const [refError, setRefError] = useState(false)
+  const refFramesRef = useRef<number[][] | null>(null)
+
+  // Keep the ref in sync so the onFrame callback can read latest without
+  // being recreated (which would restart the camera loop).
+  useEffect(() => {
+    refFramesRef.current = refFrames
+  }, [refFrames])
+
   useEffect(() => { void init() }, [init])
 
   // Start a lesson if not already in one.
@@ -38,7 +54,27 @@ export default function TutorMode() {
   }, [currentLesson.length, startLesson])
 
   const currentWord = currentLesson[currentIndex] ?? DEFAULT_LESSON[0]
-  const info = wordInfo(currentWord)
+  const info = getWordInfo(currentWord)
+
+  // Load reference trajectory whenever the word changes.
+  useEffect(() => {
+    let cancelled = false
+    setRefLoading(true)
+    setRefError(false)
+    setRefFrames(null)
+    loadReferenceTrajectory(currentWord, language).then((frames) => {
+      if (cancelled) return
+      if (frames) {
+        setRefFrames(frames)
+      } else {
+        setRefError(true)
+      }
+      setRefLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [currentWord, language])
 
   // Record learner's attempt.
   const onFrame = useCallback((tracked: FullTrackedFrame) => {
@@ -52,13 +88,17 @@ export default function TutorMode() {
         setPhase('watch')
         return
       }
-      // Score against a reference (for MVP, we compare against a simple reference).
-      // In production, this loads from the trained model's reference trajectories.
-      const refFrames = frames.slice() // placeholder — would be a stored reference
-      const result = dtw(refFrames, frames)
+      // Score against the reference trajectory for this word.
+      const reference = refFramesRef.current
+      if (!reference || reference.length === 0) {
+        setFeedback([{ message: 'No reference available for this sign yet. Try another word!', kind: 'general' }])
+        setPhase('watch')
+        return
+      }
+      const result = dtw(reference, frames)
       const s = Math.round((1 - result.normalizedDistance) * 100)
       setScore(s)
-      setFeedback(generateFeedback(frames, refFrames, result))
+      setFeedback(generateFeedback(frames, reference, result))
       recordScore(currentWord, s)
       setPhase('score')
       return
@@ -155,16 +195,28 @@ export default function TutorMode() {
               </h2>
               {phase !== 'record' && phase !== 'score' && (
                 <span className="text-xs font-bold text-ink-400 bg-cream-200 px-2 py-1 rounded-full">
-                  Watch the avatar
+                  {refLoading ? 'Loading...' : refError ? 'No reference' : 'Watch the avatar'}
                 </span>
               )}
             </div>
-            <AvatarView
-              autoRotate={phase === 'watch' || phase === 'pick'}
-              className="aspect-square"
-            />
+            {refLoading ? (
+              <div className="aspect-square rounded-2xl bg-ink-900 flex items-center justify-center">
+                <p className="text-cream-200 text-sm">Loading reference sign…</p>
+              </div>
+            ) : (
+              <AvatarView
+                featureFrames={refFrames ?? undefined}
+                autoRotate={phase === 'watch' || phase === 'pick'}
+                className="aspect-square"
+              />
+            )}
             {info && (
               <p className="mt-4 text-sm text-ink-600">{info.tip}</p>
+            )}
+            {refError && (
+              <p className="mt-2 text-xs text-sun-700 bg-sun-50 rounded-xl p-2">
+                ⚠️ No reference animation for this sign yet. You can still practice — your recording will be saved.
+              </p>
             )}
           </div>
 
@@ -257,7 +309,7 @@ export default function TutorMode() {
         <div className="mt-10">
           <h2 className="text-lg font-extrabold mb-3">Your scores</h2>
           <div className="flex flex-wrap gap-2">
-            {WORD_SIGNS.filter((w) => bestScores[w.word] != null).map(({ word: w, emoji }) => (
+            {words.filter((w) => bestScores[w.word] != null).map(({ word: w, emoji }) => (
               <div
                 key={w}
                 className={`px-3 py-2 rounded-xl text-sm font-extrabold capitalize ${

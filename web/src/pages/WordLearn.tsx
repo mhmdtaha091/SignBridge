@@ -1,6 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { WORD_SIGNS, type WordInfo } from '../config/vocab'
+import { useWordSigns } from '../config/vocabResolver'
+import { useLanguageStore } from '../store/useLanguageStore'
+import { LANGUAGES } from '../config/language'
+import type { WordInfo } from '../config/vocab'
 import { useSignStore } from '../store/useSignStore'
 
 const CATEGORY_NAMES: Record<string, string> = {
@@ -12,12 +15,25 @@ const CATEGORY_NAMES: Record<string, string> = {
 }
 
 export default function WordLearn() {
+  const words = useWordSigns()
+  const language = useLanguageStore((s) => s.language)
   const init = useSignStore((s) => s.init)
+  const [modelAvailable, setModelAvailable] = useState<boolean | null>(null)
+
   useEffect(() => {
     void init()
   }, [init])
 
-  const grouped = WORD_SIGNS.reduce<Record<string, WordInfo[]>>((acc, w) => {
+  // Check if the word-sign model is available for the current language.
+  useEffect(() => {
+    const BASE = import.meta.env.BASE_URL
+    const modelDir = language === 'psl' ? 'psl-gru-word-signs' : 'gru-word-signs'
+    fetch(`${BASE}models/${modelDir}/vocab.json`, { method: 'HEAD' })
+      .then((r) => setModelAvailable(r.ok))
+      .catch(() => setModelAvailable(false))
+  }, [language])
+
+  const grouped = words.reduce<Record<string, WordInfo[]>>((acc, w) => {
     if (!acc[w.category]) acc[w.category] = []
     acc[w.category].push(w)
     return acc
@@ -25,9 +41,9 @@ export default function WordLearn() {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
-      <h1 className="text-4xl font-black">Word Signs</h1>
+      <h1 className="text-4xl font-black">{LANGUAGES[language].name} Word Signs</h1>
       <p className="mt-2 text-ink-700 max-w-xl">
-        These are common ASL signs you can use in everyday conversation.
+        These are common {LANGUAGES[language].nativeName} signs you can use in everyday conversation.
         Tap a word to see the sign tip, then practice it live with your camera.
       </p>
 
@@ -56,7 +72,7 @@ export default function WordLearn() {
         )
       })}
 
-      <div className="mt-12 flex gap-4">
+      <div className="mt-12 flex gap-4 items-center flex-wrap">
         <Link
           to="/practice-words"
           className="px-6 py-3 rounded-full bg-coral-600 text-white font-extrabold hover:bg-coral-700 transition-colors"
@@ -69,6 +85,16 @@ export default function WordLearn() {
         >
           Free-form interpret →
         </Link>
+        {modelAvailable === true && (
+          <span className="px-3 py-1.5 rounded-full bg-leaf-100 text-leaf-700 text-xs font-bold">
+            ✅ Model ready
+          </span>
+        )}
+        {modelAvailable === false && (
+          <span className="px-3 py-1.5 rounded-full bg-sun-100 text-sun-700 text-xs font-bold">
+            ⚠️ Model not loaded
+          </span>
+        )}
       </div>
     </section>
   )

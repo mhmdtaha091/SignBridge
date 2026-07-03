@@ -96,7 +96,7 @@ export class GruSequenceClassifier implements SequenceClassifier {
     }
 
     if (bestVal < 0.3) return null
-    return { label: this.labels[bestIdx], confidence: bestVal }
+    return { label: normalizeLabel(this.labels[bestIdx]), confidence: bestVal }
   }
 
   reset() {
@@ -105,6 +105,14 @@ export class GruSequenceClassifier implements SequenceClassifier {
 }
 
 // ── helpers ────────────────────────────────────────────────────────────────
+
+/**
+ * Normalize model-output labels to match the vocabulary format used
+ * throughout the app (e.g. "thank_you" → "thank you").
+ */
+function normalizeLabel(label: string): string {
+  return label.replace(/_/g, ' ')
+}
 
 function padWindow(window: number[][], size: number): number[][] {
   if (window.length >= size) return window.slice(-size)

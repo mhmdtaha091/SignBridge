@@ -15,8 +15,19 @@ export interface HandFrame {
   score: number
 }
 
+import type { SignLanguage } from '../config/language'
+
 /** Number of values in a normalized feature vector: 21 landmarks × (x, y, z). */
 export const FEATURE_SIZE = 63
+
+/**
+ * Returns the expected feature-vector size for the given sign language.
+ * ASL fingerspelling is one-handed (63); PSL uses two-handed BANZSL and
+ * needs both hands + upper-body pose (159).
+ */
+export function getFeatureSize(language: SignLanguage): number {
+  return language === 'psl' ? FULL_FEATURE_SIZE : FEATURE_SIZE
+}
 
 // ── M3 word-sign (temporal) types ────────────────────────────────────────
 
