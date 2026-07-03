@@ -4,15 +4,26 @@ import type { FeedbackMessage } from '../components/FeedbackBanner'
 /**
  * Generate human-readable feedback from a DTW comparison.
  *
- * Rules (hand landmarks only, first 126 dims of the 159-dim feature vector):
- * - Wrist position (landmark 0) → hand height
- * - Thumb position (landmark 4) → thumb placement
- * - Average speed (trajectory length / reference length) → pace
- * - Overall DTW distance → general form
+ * Rules operate on the first 126 dims of the 159-dim feature vector
+ * (two hands, 21 landmarks × 3 coords each). Indices below use the
+ * right-hand portion (offset 63) when two hands are present; when
+ * only one hand is detected the indices map directly.
+ *
+ * Landmark indices (MediaPipe hand):
+ *   0=wrist, 4=thumb tip, 8=index tip, 12=middle tip, 16=ring tip, 20=pinky tip
  */
 
-const WRIST_Y = 1      // index 1 in a 3-coord landmark
-const THUMB_TIP_X = 12 // landmark 4, x coordinate (index 4*3 = 12)
+const INDEX_TIP = 8
+const PINKY_TIP = 20
+
+/** Compute hand offset: 63 for two-hand (159-dim), 0 for single-hand (63-dim). */
+function handOffset(frame: number[]): number {
+  return frame.length === 159 ? 63 : 0
+}
+
+function coord(frame: number[], landmark: number, axis: number): number {
+  return frame[handOffset(frame) + landmark * 3 + axis]
+}
 
 export function generateFeedback(
   learnerFrames: number[][],
@@ -25,53 +36,100 @@ export function generateFeedback(
     return [{ message: 'No hand detected — try again with better lighting.', kind: 'general' }]
   }
 
-  const score = (1 - dtwResult.normalizedDistance) * 100
+  const score = Math.round((1 - dtwResult.normalizedDistance) * 100)
 
-  // General form.
-  if (score < 40) {
-    msgs.push({ message: 'Your form is quite different from the reference. Watch the avatar and try to match the hand shape more closely.', kind: 'general' })
+  // ── 1. Overall form ──────────────────────────────────────────────────────
+  if (score < 35) {
+    msgs.push({
+      message: 'Your form is quite different from the reference. Watch the avatar carefully and try to match the hand shape.',
+      kind: 'general',
+    })
+  } else if (score < 55) {
+    msgs.push({
+      message: 'Getting there! Try to mirror the avatar more closely — focus on finger positions.',
+      kind: 'general',
+    })
   }
 
-  // Wrist height analysis.
-  const avgLearnerWristY = learnerFrames.reduce((s, f) => s + f[WRIST_Y], 0) / learnerFrames.length
-  const avgRefWristY = referenceFrames.reduce((s, f) => s + f[WRIST_Y], 0) / referenceFrames.length
+  // ── 2. Hand height ───────────────────────────────────────────────────────
+  const avgLearnerWristY = learnerFrames.reduce((s, f) => s + coord(f, 0, 1), 0) / learnerFrames.length
+  const avgRefWristY = referenceFrames.reduce((s, f) => s + coord(f, 0, 1), 0) / referenceFrames.length
   const wristDelta = avgLearnerWristY - avgRefWristY
 
   if (Math.abs(wristDelta) > 0.05) {
     msgs.push({
       message: wristDelta > 0
-        ? 'Your hand is too low — raise it higher.'
-        : 'Your hand is too high — lower it a bit.',
+        ? 'Your hand is too low — raise it higher to match the avatar.'
+        : 'Your hand is too high — lower it a bit to match the avatar.',
       kind: 'raise',
     })
   }
 
-  // Thumb position.
-  const avgLearnerThumb = learnerFrames.reduce((s, f) => s + f[THUMB_TIP_X], 0) / learnerFrames.length
-  const avgRefThumb = referenceFrames.reduce((s, f) => s + f[THUMB_TIP_X], 0) / referenceFrames.length
-  const thumbDelta = avgLearnerThumb - avgRefThumb
+  // ── 3. Finger spread ─────────────────────────────────────────────────────
+  const avgLearnerSpread = learnerFrames.reduce(
+    (s, f) => s + Math.abs(coord(f, INDEX_TIP, 0) - coord(f, PINKY_TIP, 0)),
+    0,
+  ) / learnerFrames.length
+  const avgRefSpread = referenceFrames.reduce(
+    (s, f) => s + Math.abs(coord(f, INDEX_TIP, 0) - coord(f, PINKY_TIP, 0)),
+    0,
+  ) / referenceFrames.length
+  const spreadDelta = avgLearnerSpread - avgRefSpread
 
-  if (Math.abs(thumbDelta) > 0.04) {
+  if (Math.abs(spreadDelta) > 0.06) {
     msgs.push({
-      message: thumbDelta > 0
-        ? 'Your thumb is sticking out too far — tuck it in.'
-        : 'Extend your thumb out more.',
+      message: spreadDelta > 0
+        ? 'Your fingers are too spread out — bring them closer together.'
+        : 'Spread your fingers apart more to match the sign.',
       kind: 'tuck',
     })
   }
 
-  // Pace analysis.
+  // ── 4. Index finger height (important for many finger-spelled letters) ────
+  const avgLearnerIndexY = learnerFrames.reduce((s, f) => s + coord(f, INDEX_TIP, 1), 0) / learnerFrames.length
+  const avgRefIndexY = referenceFrames.reduce((s, f) => s + coord(f, INDEX_TIP, 1), 0) / referenceFrames.length
+  const indexDelta = avgLearnerIndexY - avgRefIndexY
+
+  if (Math.abs(indexDelta) > 0.04) {
+    msgs.push({
+      message: indexDelta > 0
+        ? 'Your index finger is pointing too high — lower it slightly.'
+        : 'Lift your index finger higher to match the reference.',
+      kind: 'raise',
+    })
+  }
+
+  // ── 5. Pace / speed ──────────────────────────────────────────────────────
   const durRatio = learnerFrames.length / Math.max(1, referenceFrames.length)
-  if (durRatio > 1.3) {
-    msgs.push({ message: 'Slow the motion down — take your time with the sign.', kind: 'speed' })
-  } else if (durRatio < 0.6) {
-    msgs.push({ message: 'That was very quick — try a slower, more deliberate motion.', kind: 'speed' })
+  if (durRatio > 1.4) {
+    msgs.push({
+      message: 'Take your time with the sign — a steady, deliberate motion works best.',
+      kind: 'speed',
+    })
+  } else if (durRatio < 0.55) {
+    msgs.push({
+      message: 'That was very quick — slow down and hold the final handshape for a moment.',
+      kind: 'speed',
+    })
   }
 
-  // If everything is good.
-  if (msgs.length === 0 && score >= 70) {
-    msgs.push({ message: 'Great form! Your hand shape and motion matched well.', kind: 'general' })
+  // ── 6. Success ───────────────────────────────────────────────────────────
+  if (msgs.length === 0 && score >= 75) {
+    msgs.push({
+      message: 'Great form! Your hand shape and motion matched the reference really well.',
+      kind: 'general',
+    })
+  } else if (msgs.length === 0 && score >= 55) {
+    msgs.push({
+      message: 'Good attempt! Keep practicing to get even closer to the reference.',
+      kind: 'general',
+    })
+  } else if (msgs.length === 0) {
+    msgs.push({
+      message: 'Keep practicing — focus on matching the avatar hand shape exactly.',
+      kind: 'general',
+    })
   }
 
-  return msgs.slice(0, 3)
+  return msgs.slice(0, 4)
 }

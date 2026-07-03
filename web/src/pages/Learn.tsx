@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import HandSnapshot3D from '../components/HandSnapshot3D'
+import LazyHandSnapshot3D from '../components/LazyHandSnapshot3D'
 import { useLetters } from '../config/vocabResolver'
 import { referenceByLetter } from '../store/reference'
 import { useLanguageStore } from '../store/useLanguageStore'
@@ -47,7 +47,7 @@ export default function Learn() {
                 )}
               </div>
               {ref ? (
-                <HandSnapshot3D features={ref} className="mt-1 w-full aspect-square" />
+                <LazyHandSnapshot3D features={ref} className="mt-1 w-full aspect-square" />
               ) : (
                 <div className="mt-1 w-full aspect-square grid place-items-center text-4xl text-ink-300 group-hover:text-ink-500 transition-colors">
                   ✋

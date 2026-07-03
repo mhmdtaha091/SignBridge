@@ -8,7 +8,8 @@ import { FilledHand } from './ProceduralHand'
  * Uses the filled procedural hand — palm surface, tapered fingers,
  * skin tones — so it looks like a real hand, not a wireframe.
  *
- * Designed for the Learn gallery and letter detail cards.
+ * Auto-frames the camera per pose so every letter renders at a consistent
+ * size regardless of whether the hand is compact (fist) or extended (splayed).
  */
 
 interface Props {
@@ -33,9 +34,28 @@ function featuresToVectors(features: number[]): THREE.Vector3[] {
   return pts
 }
 
+/** Compute bounding sphere radius so we can frame the hand consistently. */
+function boundingRadius(verts: THREE.Vector3[]): number {
+  const box = new THREE.Box3().setFromPoints(verts)
+  const sphere = new THREE.Sphere()
+  box.getBoundingSphere(sphere)
+  return sphere.radius || 0.15 // fallback to plausible default
+}
+
 function StaticHand({ features }: { features: number[] }) {
   const verts = useMemo(() => featuresToVectors(features), [features])
-  return <FilledHand verts={verts} />
+
+  // Scale the hand group so the bounding sphere always fills roughly the same
+  // fraction of the viewport regardless of input pose magnitude.
+  const targetRadius = 0.22
+  const radius = useMemo(() => boundingRadius(verts), [verts])
+  const scale = useMemo(() => targetRadius / Math.max(radius, 1e-6), [radius])
+
+  return (
+    <group scale={[scale, -scale, scale]}>
+      <FilledHand verts={verts} />
+    </group>
+  )
 }
 
 export default function HandSnapshot3D({ features, className }: Props) {
@@ -45,7 +65,7 @@ export default function HandSnapshot3D({ features, className }: Props) {
       aria-hidden="true"
     >
       <Canvas
-        camera={{ position: [0.35, -0.18, 1.1], fov: 35 }}
+        camera={{ position: [0, -0.02, 0.85], fov: 35 }}
         style={{ width: '100%', aspectRatio: '1' }}
         gl={{ antialias: true, alpha: false }}
         dpr={[1, 1.5]}

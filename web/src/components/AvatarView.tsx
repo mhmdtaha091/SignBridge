@@ -123,6 +123,21 @@ function AnimatedHand({
     return new THREE.Vector3().subVectors(im, pm).length() * 0.55
   }, [verts])
 
+  // Auto-framing: compute bounding sphere of the current pose so the hand
+  // always fills a consistent fraction of the viewport regardless of whether
+  // the input is compact (closed fist) or extended (splayed fingers).
+  const targetRadius = 0.18
+  const boundingRadius = useMemo(() => {
+    const box = new THREE.Box3().setFromPoints(verts)
+    const sphere = new THREE.Sphere()
+    box.getBoundingSphere(sphere)
+    return sphere.radius || 0.12
+  }, [verts])
+  const autoScale = useMemo(
+    () => targetRadius / Math.max(boundingRadius, 1e-6),
+    [boundingRadius],
+  )
+
   // Animation loop
   useFrame((_, delta) => {
     if (!effectiveFrames || effectiveFrames.length < 2) return
@@ -171,7 +186,7 @@ function AnimatedHand({
   })
 
   return (
-    <group ref={groupRef} scale={[2.5, -2.5, 2.5]} position={[0, -0.2, 0]}>
+    <group ref={groupRef} scale={[autoScale, -autoScale, autoScale]} position={[0, -0.1, 0]}>
       {/* Palm body */}
       <mesh ref={palmRef} position={palmCenter} scale={[1, 0.6, 0.5]}>
         <sphereGeometry args={[palmRadius, 16, 12]} />
