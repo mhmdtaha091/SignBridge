@@ -2,6 +2,13 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import './index.css'
+
+// Register PWA service worker for offline support.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {
+    // SW registration fails on localhost with some browsers; not an error.
+  })
+}
 import Layout from './components/Layout'
 import Landing from './pages/Landing'
 import Learn from './pages/Learn'

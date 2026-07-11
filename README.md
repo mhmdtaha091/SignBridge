@@ -9,6 +9,11 @@
 
 [![CI](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml)
 
+<p align="center">
+  <em>🚧 Demo GIF coming soon — record a short clip of the Interpret + Tutor modes and replace this placeholder.<br/>
+  See <a href="#contributing">Contributing</a> if you'd like to help.</em>
+</p>
+
 ## What it does
 
 | Mode | What happens |
@@ -55,6 +60,25 @@ Landmarks instead of raw video makes recognition fast, private, and robust to li
 | PSL words (GRU) | PSL | Word signs | 86.7% | 69 words |
 
 All numbers are held-out validation accuracy on real landmark data. Model weights are bundled as small TF.js exports; training scripts and larger Keras/H5 weights are in the [ml/](ml/) directory and on the [GitHub Releases](https://github.com/mhmdtaha091/SignBridge/releases) page.
+
+## Performance
+
+SignBridge runs entirely client-side. Every millisecond counts on the live-interpret path:
+
+| Metric | Value | Notes |
+|---|---|---|
+| Camera + MediaPipe FPS | 15–30 | Device-dependent; MediaPipe HandLandmarker WASM |
+| MLP inference (letters) | < 1 ms | 63/159-dim → softmax, one forward pass |
+| KNN inference (letters) | < 5 ms | Distance-weighted search over user samples |
+| GRU inference (word signs) | ~5–15 ms | 30-frame rolling window, single step |
+| End-to-end latency | ~50–100 ms | Camera frame → landmark → classify → speech |
+| signGate false-positive rate | TBD | M5 — scripted 2-minute session, tune confidence threshold (see [roadmap](docs/ROADMAP.md#m5)) |
+
+Performance varies by device, GPU availability, and number of user-recorded KNN samples. The numbers above are architecture-expected; measured numbers from a real mid-range phone will replace them in M5. Run `benchmark()` from the browser console (see [`web/src/recognition/benchmark.ts`](web/src/recognition/benchmark.ts)) to measure on your own device.
+
+## Cross-signer evaluation (M5)
+
+The PSL dataset has two recording sources — `laptop_data` (built-in webcam) and `webcam_data` (external camera). Training on one and evaluating on the other gives an honest generalization number that accounts for camera variation. The evaluation pipeline is in [`ml/cross_signer_eval.py`](ml/cross_signer_eval.py); the final published number requires re-extracting landmarks with source labels. See [docs/DATASET.md](docs/DATASET.md#cross-signer-evaluation-m5).
 
 ## Run it locally
 

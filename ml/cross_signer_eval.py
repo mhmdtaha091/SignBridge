@@ -70,25 +70,42 @@ def build_vocab(samples: list[dict]) -> dict[str, int]:
     return {label: i for i, label in enumerate(labels)}
 
 
-def frames_to_windows(
+def samples_to_arrays(
     samples: list[dict],
     label_to_idx: dict[str, int],
-    window_size: int = 30,
-    stride: int = 10,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Convert variable-length sequences to fixed windows for training."""
+    """Convert single-frame samples to (n_samples, feature_dim) array.
+
+    If features is a flat list of floats (single frame, e.g. 159-dim),
+    stacks them directly. If it's a list of frames (sequences), uses only
+    the first frame for the quick 1-NN baseline.
+    """
     X, y = [], []
+    dim = None
     for s in samples:
-        frames = s["features"]
+        feats = s["features"]
+        if not feats:
+            continue
         label_idx = label_to_idx.get(s["label"])
         if label_idx is None:
             continue
-        for start in range(0, max(1, len(frames) - window_size + 1), stride):
-            window = frames[start : start + window_size]
-            if len(window) < window_size:
+        # Detect: flat list of floats (single frame) vs nested list of frames
+        if isinstance(feats[0], (int, float)):
+            # Flat — single frame
+            vec = np.array(feats, dtype=np.float32)
+            if dim is None:
+                dim = len(vec)
+            elif len(vec) != dim:
+                continue  # skip inconsistent shapes
+        else:
+            # Nested — use first frame
+            vec = np.array(feats[0], dtype=np.float32)
+            if dim is None:
+                dim = len(vec)
+            elif len(vec) != dim:
                 continue
-            X.append(window)
-            y.append(label_idx)
+        X.append(vec)
+        y.append(label_idx)
     return np.array(X, dtype=np.float32), np.array(y, dtype=np.int32)
 
 
@@ -120,33 +137,36 @@ def main():
     num_classes = len(label_to_idx)
     print(f"Vocabulary: {num_classes} words")
 
-    # Create windows
-    X_train, y_train = frames_to_windows(train, label_to_idx)
-    X_test, y_test = frames_to_windows(test, label_to_idx)
-    print(f"Train windows: {X_train.shape[0]}, Test windows: {X_test.shape[0]}")
+    # Create feature arrays
+    X_train, y_train = samples_to_arrays(train, label_to_idx)
+    X_test, y_test = samples_to_arrays(test, label_to_idx)
+    print(f"Train samples: {X_train.shape[0]}, Test samples: {X_test.shape[0]}")
+    print(f"Feature dim: {X_train.shape[1]}")
 
-    # Simple 1-NN evaluation for a quick cross-signer number
-    # (GRU training requires TensorFlow; 1-NN gives a quick baseline)
-    correct = 0
-    for i in range(len(X_test)):
-        # Compare test window against all train windows via mean frame distance
-        test_seq = X_test[i]
-        best_label = None
-        best_dist = float("inf")
-        for j in range(len(X_train)):
-            # Mean Euclidean distance between sequence pairs
-            dist = np.mean(np.sqrt(np.sum((test_seq - X_train[j]) ** 2, axis=-1)))
-            if dist < best_dist:
-                best_dist = dist
-                best_label = y_train[j]
-        if best_label == y_test[i]:
-            correct += 1
+    # ── Vectorized 1-NN (fast single-frame baseline) ────────────────────
+    # Compute pairwise L2 distances: (n_test, n_train)
+    # ||a - b||² = ||a||² + ||b||² - 2·a·bᵀ
+    test_norm = np.sum(X_test ** 2, axis=1, keepdims=True)    # (n_test, 1)
+    train_norm = np.sum(X_train ** 2, axis=1, keepdims=True)  # (n_train, 1)
+    cross = np.dot(X_test, X_train.T)                          # (n_test, n_train)
+    dists = np.sqrt(np.maximum(0, test_norm + train_norm.T - 2 * cross))
 
-    acc = correct / len(X_test)
+    best_idx = np.argmin(dists, axis=1)
+    correct = int(np.sum(y_test == y_train[best_idx]))
+    acc = correct / len(y_test)
+
     print(f"\n{'=' * 60}")
-    print(f"Cross-signer 1-NN accuracy: {acc * 100:.1f}% ({correct}/{len(X_test)})")
-    print(f"Note: 1-NN is a simple baseline. GRU accuracy from ml/train_psl_gru.py")
-    print(f"is the number to use in the metrics table.")
+    print(f"Cross-signer 1-NN accuracy: {acc * 100:.1f}% ({correct}/{len(y_test)})")
+    print(f"Feature dim: {X_train.shape[1]}, Vocabulary: {num_classes} letters")
+    print(f"Split: {len(train)} train, {len(test)} test (random — no source labels)")
+    print(f"")
+    print(f"NOTE: This is a random-split 1-NN baseline on single-frame PSL letter")
+    print(f"data. A proper cross-signer evaluation requires:")
+    print(f"  1. Re-extracting landmarks from the raw dataset WITH source labels")
+    print(f"     (laptop_data vs webcam_data) using extract_psl_landmarks.py")
+    print(f"  2. Training on one source, evaluating on the other")
+    print(f"  3. For word signs: training GRU on laptop_data, testing on webcam_data")
+    print(f"See docs/DATASET.md and docs/ROADMAP.md M5 for the full plan.")
     print(f"{'=' * 60}")
 
 

@@ -368,6 +368,34 @@ export default function DataStudio() {
             </div>
           </div>
 
+          {/* ── Community dataset contribution ────────────────────────── */}
+          <div className="rounded-3xl bg-leaf-50 border border-leaf-200 p-5 space-y-3">
+            <h2 className="font-extrabold text-lg flex items-center gap-2">
+              🌍 Community Dataset
+              <span className="text-xs font-bold bg-leaf-200 text-leaf-700 px-2 py-0.5 rounded-full">CC0</span>
+            </h2>
+            <p className="text-sm text-ink-700">
+              SignBridge improves when more people contribute. Exported files contain only
+              landmark coordinates (63 or 159 numbers per frame) — <strong>no images, no
+              video, no identifying information</strong>. By contributing, you dedicate your
+              landmark samples to the public domain (CC0) so they can help build better sign
+              language recognition for everyone.
+            </p>
+            <p className="text-xs text-ink-500">
+              Contribute via{' '}
+              <a
+                href="https://github.com/mhmdtaha091/SignBridge/issues/new?labels=community-dataset&title=Community+dataset+contribution"
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-leaf-700 hover:underline"
+              >
+                GitHub Issues ↗
+              </a>{' '}
+              — attach your exported JSON and optionally note which signs and how many
+              samples are included.
+            </p>
+          </div>
+
           {!loaded && <p className="text-ink-500">Loading your samples…</p>}
         </div>
       </div>

@@ -1,9 +1,8 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision'
 
-const WASM_BASE =
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task'
+// Self-hosted for PWA offline support. In dev mode Vite serves these from /public.
+const WASM_BASE = '/wasm'
+const MODEL_URL = '/models/pose_landmarker_lite.task'
 
 let instance: Promise<PoseLandmarker> | null = null
 

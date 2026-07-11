@@ -1,9 +1,8 @@
 import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision'
 
-const WASM_BASE =
-  'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm'
-const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task'
+// Self-hosted for PWA offline support. In dev mode Vite serves these from /public.
+const WASM_BASE = '/wasm'
+const MODEL_URL = '/models/hand_landmarker.task'
 
 let instance: Promise<HandLandmarker> | null = null
 

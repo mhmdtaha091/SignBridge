@@ -5,7 +5,7 @@
 > independently demo-able and has acceptance criteria. New ideas go to the backlog,
 > not the current milestone.
 
-## Where we are (2026-07-02)
+## Where we are (2026-07-06)
 
 - ✅ **M1 — Fingerspelling v0** (shipped): full app shell, in-browser hand tracking,
   KNN + trainable TF.js MLP, stability gate → word buffer → speech, Practice quiz,
@@ -14,13 +14,29 @@
   fingerspelling model (94.7% held-out on 24 letters), works out of the box.
 - ✅ **M3 — Word signs** (shipped): GRU word-sign model, **96.2% accuracy, 25 words,
   706 windows**, 601KB TF.js export; Colab training pipeline.
-- ⚠️ **Uncommitted on disk:** the entire PSL (Pakistan Sign Language) milestone
-  (`ml/train_psl_gru.py`, `ml/train_psl_letters.py`, `ml/extract_psl_landmarks.py`,
-  two Colab notebooks, trained PSL models, PSL vocab/labels) plus modifications to
-  TutorMode and ~14 other web files. **This is the single most differentiating work
-  in the repo and it is invisible on GitHub and at risk of loss.**
+- ✅ **M3.5 — PSL** (shipped 2026-07-03): bilingual ASL + PSL, 4 models (ASL letters,
+  ASL words, PSL letters 99.0%/18 letters, PSL words 86.7%/69 words), PSL vocab with
+  BANZSL two-handed alphabet, language toggle wired across all pages with guardrails.
+- ✅ **M4 — Tutor mode** (shipped 2026-07-03): 5 reference trajectories (hello, love,
+  no, thank you, yes), WebGL context fix (IntersectionObserver lazy-mount), per-pose
+  auto-framing (bounding-sphere camera scaling), DTW feedback (hand height, finger
+  spread, index position, pace, overall form).
+- ✅ **M4.5 — Polish** (shipped 2026-07-03): shared Button/Card components, hamburger
+  mobile nav (≥44px touch targets), footer link fixed, DTW/signGate/vocabResolver
+  tests (63 tests, 8 files), OG image + favicon.
+- ✅ **M5.1 — CI** (shipped): GitHub Actions on push/PR (TypeScript check + tests +
+  build), green badge in README.
+- 🟡 **M5.2 — Cross-signer eval**: `ml/cross_signer_eval.py` is ready (fast vectorized
+  1-NN baseline). Needs PSL landmarks re-extracted with source labels (laptop_data vs
+  webcam_data) to produce the published generalization number.
+- 🟡 **M5.3—M5.5**: metrics table complete (4 models, accuracy + vocab); demo GIF
+  placeholder in README; signGate FP rate and latency measurements pending real-device
+  benchmarking.
+- ✅ **PWA** (2026-07-06): manifest.json, service worker with cache-first strategy,
+  self-hosted MediaPipe WASM + .task models — app is installable and offline-capable.
+- ✅ **Community dataset** (2026-07-06): CC0 contribution section in Data Studio with
+  instructions for donating landmark samples via GitHub Issues.
 - Live demo: https://signbridge-kappa.vercel.app · Repo: github.com/mhmdtaha091/SignBridge
-- No CI. No demo GIF in README. Tutor mode has no reference trajectories deployed.
 
 ---
 
@@ -132,27 +148,32 @@ All items from the external fix-list not covered above:
 
 ## M5 — Proof of quality (what recruiters and reviewers actually check)
 
-1. **CI** — GitHub Actions: lint + `npm test` + `npm run build` on push/PR, badge
+1. ✅ **CI** — GitHub Actions: lint + `npm test` + `npm run build` on push/PR, badge
    in README.
-2. **Cross-signer evaluation** — the PSL dataset has `laptop_data` vs `webcam_data`
-   splits: train on one, report held-out accuracy on the other. This yields an
-   honest generalization number (expect it lower than 96.2% — publish it anyway;
-   honest numbers are the brand).
-3. **Metrics table in README** — letters (ASL 94.7%), words (ASL 96.2%/25 words),
-   PSL letters/words, cross-signer number, in-browser inference latency and FPS.
-4. **Demo GIF** at the top of the README (Interpret + Tutor loops).
-5. **signGate false-positive rate** — measure garbage emissions between signs over
-   a scripted 2-minute session; tune confidence threshold; publish the number.
-   Interpret mode is the live-interview demo; this is the failure mode that kills it.
+2. 🟡 **Cross-signer evaluation** — `ml/cross_signer_eval.py` is ready (fast
+   vectorized 1-NN). **Blocked on:** re-extracting PSL landmarks with source labels
+   (`laptop_data` vs `webcam_data`). Once done, train on one source → test on other
+   → publish the honest generalization number.
+3. ✅ **Metrics table in README** — letters (ASL 94.7%), words (ASL 96.2%/25 words),
+   PSL letters 99.0%, PSL words 86.7%/69 words. Architecture-expected latency/FPS
+   included; real-device numbers replace them in M5 final.
+4. 🟡 **Demo GIF** — placeholder in README. Record Interpret + Tutor loops on a real
+   device and replace the placeholder.
+5. 🟡 **signGate false-positive rate** — `web/src/recognition/benchmark.ts` ready for
+   console-based benchmarking. Scripted 2-minute session + confidence threshold
+   tuning pending.
 
 ---
 
 ## M6 — Reach
 
-- **PWA**: offline support (self-host MediaPipe WASM + models), installable.
-- **Community dataset**: CC0 landmark-donation flow via Data Studio JSON export;
-  broaden the starter model across more hands (signer diversity is the real
-  accuracy ceiling).
+- ✅ **PWA** (2026-07-06): offline support via service worker (cache-first strategy),
+  self-hosted MediaPipe WASM files + hand/pose landmarker .task models in
+  `web/public/`, `manifest.json` with theme color and icons, installable on
+  Chrome/Edge. SW registration in `main.tsx`.
+- ✅ **Community dataset** (2026-07-06): CC0 contribution section in Data Studio
+  with public-domain dedication notice and GitHub Issues link for submitting
+  landmark-sample JSON exports.
 - **Technical write-up**: "Why landmarks beat YOLOv8 for browser sign recognition"
   + the PSL dataset pipeline story. Publish (blog / dev.to / repo docs) and link
   from README and portfolio site.

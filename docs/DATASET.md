@@ -53,15 +53,31 @@ on Kaggle (public, no-auth):
 | Model | Accuracy | Vocab | Notes |
 |---|---|---|---|
 | PSL letters (MLP) | **99.0%** | 18 letters | Trained on Kaggle PSL dataset; A/B/C/D/F/G/H/K/L/M/N/P/Q/R/S/T/V/Y |
-| PSL words (GRU) | **86.7%** | 69 words | Community dataset, cross-signer eval pending (M5) |
+| PSL words (GRU) | **86.7%** | 69 words | Community dataset; cross-signer eval script ready, needs re-extraction with source labels to run (M5) |
 | ASL letters (MLP) | 94.7% | 24 letters | Shipped in M2 |
 | ASL words (GRU) | 96.2% | 25 words | Shipped in M3 |
 
 PSL letters achieve higher accuracy than ASL because PSL's two-handed system
 produces more distinctive landmark configurations per letter. PSL word-sign
 accuracy is lower — the dataset is community-sourced with fewer samples per
-sign and more inter-signer variation. Cross-signer evaluation (M5) will give
-an honest generalization number.
+sign and more inter-signer variation.
+
+## Cross-signer evaluation (M5)
+
+The PSL dataset (PakistanSignLanguageDatasetV2) contains two recording sources:
+`laptop_data` (built-in webcam) and `webcam_data` (external USB camera). Training
+on one and evaluating on the other yields an honest generalization number that
+accounts for camera variation.
+
+**Current status:** `ml/cross_signer_eval.py` is a fast vectorized 1-NN baseline
+script. To produce the published cross-signer number:
+
+1. Re-run `ml/extract_psl_landmarks.py` with `--include-source` to embed
+   `laptop_data` / `webcam_data` labels in the JSONL.
+2. Train the GRU on `laptop_data` only, evaluate on `webcam_data`.
+3. Report both the 1-NN baseline and GRU accuracy in the metrics table.
+
+This is scheduled for M5. See `docs/ROADMAP.md`.
 
 ## Other public datasets (for future milestones)
 

@@ -1,0 +1,19 @@
+{
+  "name": "SignBridge — Sign Language Tutor",
+  "short_name": "SignBridge",
+  "description": "Learn American Sign Language and Pakistan Sign Language with live camera feedback. Free, open-source, and private.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#FF6B4A",
+  "background_color": "#1a1a2e",
+  "categories": ["education", "accessibility", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
