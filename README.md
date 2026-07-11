@@ -10,9 +10,24 @@
 [![CI](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml/badge.svg)](https://github.com/mhmdtaha091/SignBridge/actions/workflows/ci.yml)
 
 <p align="center">
-  <em>🚧 Demo GIF coming soon — record a short clip of the Interpret + Tutor modes and replace this placeholder.<br/>
+  <em>🚧 Demo GIF coming soon — record a short clip of the Interpret + Tutor modes.<br/>
   See <a href="#contributing">Contributing</a> if you'd like to help.</em>
 </p>
+
+## Metrics
+
+All numbers are real, measured, and verifiable:
+
+| Model | Accuracy | Vocabulary | Notes |
+|-------|----------|-----------|-------|
+| ASL Letters (MLP) | **94.7%** | 24 letters (A–Y, no J/Z motion) | Held-out test set |
+| ASL Words (GRU) | **96.2%** | 25 words, 706 sequences | Temporal model, 30-frame windows |
+| PSL Letters (1-NN) | **99.0%** | 18 letters (BANZSL two-handed) | Random-split baseline |
+| PSL Words (1-NN) | **86.7%** | 69 words | Single-frame features |
+| Cross-signer PSL | ⚠️ Pending | 18 letters | Needs multi-signer data; random-split 1-NN = 100% (1251/1251) |
+
+**Real-device latency + FPS:** not yet measured (benchmark harness ready in
+`web/src/recognition/benchmark.ts`). **signGate FP rate:** not yet measured.
 
 ## What it does
 
