@@ -15,6 +15,11 @@ __pycache__/
 *.h5
 *.keras
 
+# self-hosted MediaPipe runtime assets — fetched by web/scripts/fetch-models.mjs
+# (wasm comes from the npm package; .task models from Google's pinned storage)
+web/public/wasm/
+web/public/models/*.task
+
 # editor / os
 .vscode/*
 !.vscode/extensions.json

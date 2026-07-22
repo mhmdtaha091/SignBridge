@@ -53,7 +53,7 @@ on Kaggle (public, no-auth):
 | Model | Accuracy | Vocab | Notes |
 |---|---|---|---|
 | PSL letters (MLP) | **99.0%** | 18 letters | Trained on Kaggle PSL dataset; A/B/C/D/F/G/H/K/L/M/N/P/Q/R/S/T/V/Y |
-| PSL words (GRU) | **86.7%** | 69 words | Community dataset; cross-signer eval script ready, needs re-extraction with source labels to run (M5) |
+| PSL words (GRU) | **86.7%** | 69 words | Community dataset; in-source random split — see cross-source eval below for the generalization number |
 | ASL letters (MLP) | 94.7% | 24 letters | Shipped in M2 |
 | ASL words (GRU) | 96.2% | 25 words | Shipped in M3 |
 
@@ -62,22 +62,38 @@ produces more distinctive landmark configurations per letter. PSL word-sign
 accuracy is lower — the dataset is community-sourced with fewer samples per
 sign and more inter-signer variation.
 
-## Cross-signer evaluation (M5)
+## Cross-source evaluation (M5)
 
-The PSL dataset (PakistanSignLanguageDatasetV2) contains two recording sources:
-`laptop_data` (built-in webcam) and `webcam_data` (external USB camera). Training
-on one and evaluating on the other yields an honest generalization number that
-accounts for camera variation.
+The PSL dataset (PakistanSignLanguageDatasetV2) contains three recording sources:
+`laptop_data`, `webcam_data`, and `mobile_data`. Training on one source and
+evaluating on the others yields an honest generalization number that accounts for
+camera, lighting, and framing variation — the conditions a real user brings.
 
-**Current status:** `ml/cross_signer_eval.py` is a fast vectorized 1-NN baseline
-script. To produce the published cross-signer number:
+### Measured results (2026-07-17)
 
-1. Re-run `ml/extract_psl_landmarks.py` with `--include-source` to embed
-   `laptop_data` / `webcam_data` labels in the JSONL.
-2. Train the GRU on `laptop_data` only, evaluate on `webcam_data`.
-3. Report both the 1-NN baseline and GRU accuracy in the metrics table.
+`ml/cross_source_gru_eval.py` trains the exact shipped GRU architecture
+(30-frame windows, stride 15, 159-dim features, 8 recordings/word budget —
+identical to `ml/train_psl_gru.py`) on `laptop_data` only, then evaluates on
+the unseen sources. 62 classes present in all three sources; seeded (42);
+config + results captured in `ml/results/cross_source_gru_20260717_193649.json`.
 
-This is scheduled for M5. See `docs/ROADMAP.md`.
+| Split | Window accuracy | Recording accuracy (majority vote) |
+|---|---|---|
+| laptop_data random 10% (in-source val) | — | **87.2%** |
+| → webcam_data (1,484 windows / 495 recordings) | 35.0% | **39.4%** |
+| → mobile_data (1,488 windows / 496 recordings) | 25.1% | **27.0%** |
+
+Single-frame 1-NN baselines on the same laptop→webcam split
+(`ml/cross_signer_eval.py`): 9.2% using first frames, 41.2% using mid-sequence
+frames.
+
+**What the gap means.** The ~48-point drop from in-source to cross-source is the
+real finding: capture-setup shift — not model capacity — dominates PSL word-sign
+error. Landmark normalization removes position/scale but not frame-rate,
+occlusion, and hand-detection differences between capture setups. This is why
+the roadmap prioritizes multi-source training data and per-source augmentation
+over architecture work, and why the in-app Data Studio (fine-tune on *your*
+camera) exists.
 
 ## Other public datasets (for future milestones)
 

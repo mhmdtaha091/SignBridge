@@ -26,9 +26,10 @@
   tests (63 tests, 8 files), OG image + favicon.
 - ✅ **M5.1 — CI** (shipped): GitHub Actions on push/PR (TypeScript check + tests +
   build), green badge in README.
-- 🟡 **M5.2 — Cross-signer eval**: `ml/cross_signer_eval.py` is ready (fast vectorized
-  1-NN baseline). Needs PSL landmarks re-extracted with source labels (laptop_data vs
-  webcam_data) to produce the published generalization number.
+- ✅ **M5.2 — Cross-source eval** (2026-07-17): `ml/cross_source_gru_eval.py` trains
+  the shipped GRU on `laptop_data` only, tests on unseen `webcam_data`/`mobile_data`:
+  **39.4% / 27.0%** recording-level vs 87.2% in-source — the honest generalization
+  number is published in README + DATASET.md; results JSON in `ml/results/`.
 - 🟡 **M5.3—M5.5**: metrics table complete (4 models, accuracy + vocab); demo GIF
   placeholder in README; signGate FP rate and latency measurements pending real-device
   benchmarking.
@@ -150,10 +151,11 @@ All items from the external fix-list not covered above:
 
 1. ✅ **CI** — GitHub Actions: lint + `npm test` + `npm run build` on push/PR, badge
    in README.
-2. 🟡 **Cross-signer evaluation** — `ml/cross_signer_eval.py` is ready (fast
-   vectorized 1-NN). **Blocked on:** re-extracting PSL landmarks with source labels
-   (`laptop_data` vs `webcam_data`). Once done, train on one source → test on other
-   → publish the honest generalization number.
+2. ✅ **Cross-source evaluation** (2026-07-17) — `ml/cross_source_gru_eval.py`:
+   GRU trained on `laptop_data` only, tested on unseen sources → **39.4%**
+   (webcam) / **27.0%** (mobile) recording-level vs 87.2% in-source. Published in
+   README + DATASET.md with the capture-shift finding; run captured in
+   `ml/results/cross_source_gru_20260717_193649.json`.
 3. ✅ **Metrics table in README** — letters (ASL 94.7%), words (ASL 96.2%/25 words),
    PSL letters 99.0%, PSL words 86.7%/69 words. Architecture-expected latency/FPS
    included; real-device numbers replace them in M5 final.

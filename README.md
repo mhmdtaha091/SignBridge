@@ -24,7 +24,14 @@ All numbers are real, measured, and verifiable:
 | ASL Words (GRU) | **96.2%** | 25 words, 706 sequences | Temporal model, 30-frame windows |
 | PSL Letters (1-NN) | **99.0%** | 18 letters (BANZSL two-handed) | Random-split baseline |
 | PSL Words (1-NN) | **86.7%** | 69 words | Single-frame features |
-| Cross-signer PSL | ⚠️ Pending | 18 letters | Needs multi-signer data; random-split 1-NN = 100% (1251/1251) |
+| PSL Words GRU, cross-source | **39.4%** webcam · **27.0%** mobile | 62 words | Train on `laptop_data` only, test on unseen capture sources — recording-level majority vote ([methodology](docs/DATASET.md#cross-source-evaluation-m5)) |
+
+**The honest generalization number.** The same GRU that scores 87.2% on a random
+in-source split drops to 39.4% (webcam) / 27.0% (mobile) when trained on one capture
+setup and tested on another (`ml/cross_source_gru_eval.py`, run log in
+`ml/results/`). That ~48-point gap is the real finding: capture-setup shift — not
+model capacity — dominates PSL word-sign error, which is why the roadmap prioritizes
+multi-source data collection over architecture work.
 
 **Real-device latency + FPS:** not yet measured (benchmark harness ready in
 `web/src/recognition/benchmark.ts`). **signGate FP rate:** not yet measured.
@@ -91,9 +98,15 @@ SignBridge runs entirely client-side. Every millisecond counts on the live-inter
 
 Performance varies by device, GPU availability, and number of user-recorded KNN samples. The numbers above are architecture-expected; measured numbers from a real mid-range phone will replace them in M5. Run `benchmark()` from the browser console (see [`web/src/recognition/benchmark.ts`](web/src/recognition/benchmark.ts)) to measure on your own device.
 
-## Cross-signer evaluation (M5)
+## Cross-source evaluation (M5)
 
-The PSL dataset has two recording sources — `laptop_data` (built-in webcam) and `webcam_data` (external camera). Training on one and evaluating on the other gives an honest generalization number that accounts for camera variation. The evaluation pipeline is in [`ml/cross_signer_eval.py`](ml/cross_signer_eval.py); the final published number requires re-extracting landmarks with source labels. See [docs/DATASET.md](docs/DATASET.md#cross-signer-evaluation-m5).
+The PSL dataset has three recording sources — `laptop_data`, `webcam_data`, and
+`mobile_data`. Training the word-sign GRU on `laptop_data` only and testing on the
+other two measures how well the model generalizes to capture setups it has never
+seen: **39.4%** (webcam) and **27.0%** (mobile) recording-level accuracy vs 87.2%
+on an in-source random split. Pipeline: [`ml/cross_source_gru_eval.py`](ml/cross_source_gru_eval.py)
+(seeded, config captured in `ml/results/`). Full methodology + discussion in
+[docs/DATASET.md](docs/DATASET.md#cross-source-evaluation-m5).
 
 ## Run it locally
 
