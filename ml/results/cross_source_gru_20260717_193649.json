@@ -1,0 +1,33 @@
+{
+  "script": "ml/cross_source_gru_eval.py",
+  "train_source": "laptop_data",
+  "num_classes": 62,
+  "train_windows": 1339,
+  "in_source_val_accuracy": 0.8725,
+  "train_seconds": 38.4,
+  "config": {
+    "window": 30,
+    "stride": 15,
+    "feature_size": 159,
+    "max_recordings": 8,
+    "max_frames": 60,
+    "epochs": 50,
+    "batch": 32,
+    "lr": 0.001,
+    "seed": 42
+  },
+  "test_sources": {
+    "webcam_data": {
+      "window_accuracy": 0.3497,
+      "windows": 1484,
+      "recording_majority_vote_accuracy": 0.3939,
+      "recordings": 495
+    },
+    "mobile_data": {
+      "window_accuracy": 0.2507,
+      "windows": 1488,
+      "recording_majority_vote_accuracy": 0.2702,
+      "recordings": 496
+    }
+  }
+}

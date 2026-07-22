@@ -5,9 +5,10 @@ Splits the PSL dataset by source (laptop vs webcam) to measure how well
 the model generalizes — the honest number for the metrics table.
 
 Usage:
-    python ml/cross_signer_eval.py
+    python ml/cross_signer_eval.py [path/to/landmarks.jsonl]
 
 Reads pre-extracted landmark sequences from ml/data/psl_landmarks.jsonl
+(or the JSONL passed as the first argument)
 (or processes the raw PSL dataset if landmarks haven't been extracted yet).
 Trains on one split, evaluates on the other, prints the accuracy gap.
 """
@@ -39,6 +40,8 @@ def train_test_split_by_source(samples: list[dict]):
     """
     Split by recording source. If 'source' field is present, use it.
     Otherwise fall back to an 80/20 random split.
+
+    Returns (train, test, split_kind) where split_kind describes the split.
     """
     by_source = defaultdict(list)
     has_source = False
@@ -52,6 +55,7 @@ def train_test_split_by_source(samples: list[dict]):
         sources = sorted(by_source.keys())
         train = by_source[sources[0]]
         test = by_source[sources[1]] if len(sources) > 1 else by_source[sources[0]]
+        split_kind = f"by source: train={sources[0]}, test={sources[1]}"
         print(f"Split by source: train={sources[0]} ({len(train)} samples), "
               f"test={sources[1]} ({len(test)} samples)")
     else:
@@ -60,9 +64,10 @@ def train_test_split_by_source(samples: list[dict]):
         np.random.shuffle(samples)
         split = int(len(samples) * 0.8)
         train, test = samples[:split], samples[split:]
+        split_kind = "random 80/20 — no source labels"
         print(f"Random split: train={len(train)}, test={len(test)}")
 
-    return train, test
+    return train, test, split_kind
 
 
 def build_vocab(samples: list[dict]) -> dict[str, int]:
@@ -114,8 +119,10 @@ def main():
     print("SignBridge — Cross-Signer Evaluation")
     print("=" * 60)
 
-    if not LANDMARKS_FILE.exists():
-        print(f"\nERROR: Landmarks file not found at {LANDMARKS_FILE}")
+    landmarks_file = Path(sys.argv[1]) if len(sys.argv) > 1 else LANDMARKS_FILE
+
+    if not landmarks_file.exists():
+        print(f"\nERROR: Landmarks file not found at {landmarks_file}")
         print("Run ml/extract_psl_landmarks.py first to extract landmarks")
         print("from the PSL dataset videos.")
         print("\nFor now, reporting placeholder: run on actual data to get real numbers.")
@@ -123,10 +130,10 @@ def main():
         print('  {"label": "hello", "source": "laptop_data", "features": [[159 floats], ...]}')
         sys.exit(1)
 
-    samples = load_landmarks(LANDMARKS_FILE)
+    samples = load_landmarks(landmarks_file)
     print(f"\nLoaded {len(samples)} landmark sequences.")
 
-    train, test = train_test_split_by_source(samples)
+    train, test, split_kind = train_test_split_by_source(samples)
 
     if len(train) < 10 or len(test) < 5:
         print("ERROR: Not enough samples for a meaningful evaluation.")
@@ -156,12 +163,13 @@ def main():
     acc = correct / len(y_test)
 
     print(f"\n{'=' * 60}")
-    print(f"Cross-signer 1-NN accuracy: {acc * 100:.1f}% ({correct}/{len(y_test)})")
-    print(f"Feature dim: {X_train.shape[1]}, Vocabulary: {num_classes} letters")
-    print(f"Split: {len(train)} train, {len(test)} test (random — no source labels)")
+    print(f"1-NN accuracy: {acc * 100:.1f}% ({correct}/{len(y_test)})")
+    print(f"Feature dim: {X_train.shape[1]}, Vocabulary: {num_classes} classes")
+    print(f"Split: {len(train)} train, {len(test)} test ({split_kind})")
     print(f"")
-    print(f"NOTE: This is a random-split 1-NN baseline on single-frame PSL letter")
-    print(f"data. A proper cross-signer evaluation requires:")
+    print(f"NOTE: For sequence samples this baseline uses only the first frame.")
+    print(f"Without source labels this is a random-split baseline, NOT a")
+    print(f"cross-signer number. A proper cross-signer evaluation requires:")
     print(f"  1. Re-extracting landmarks from the raw dataset WITH source labels")
     print(f"     (laptop_data vs webcam_data) using extract_psl_landmarks.py")
     print(f"  2. Training on one source, evaluating on the other")
